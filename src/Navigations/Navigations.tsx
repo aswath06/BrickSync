@@ -1,0 +1,21 @@
+import React from 'react';
+// Packages
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { FirstPage, GetStarted, HomeScreen, LoginScreen } from '../Screens';
+// Screens
+
+const RootStack = createNativeStackNavigator();
+
+export const Navigation = () => {
+  return (
+    <NavigationContainer>
+      <RootStack.Navigator initialRouteName="LoginScreen">
+        <RootStack.Screen name="GetStarted" component={GetStarted} options={{headerShown: false}}/>
+        <RootStack.Screen name="HomeScreen" component={HomeScreen} options={{headerShown: false}}/>
+        <RootStack.Screen name="FirstPage" component={FirstPage} options={{headerShown: false}}/>
+        <RootStack.Screen name="LoginScreen" component={LoginScreen} options={{headerShown: false}}/>
+      </RootStack.Navigator>
+    </NavigationContainer>
+  );
+};
