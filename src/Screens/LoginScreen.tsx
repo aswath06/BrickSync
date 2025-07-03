@@ -2,30 +2,32 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import { styles } from './LoginScreen.styles';
 
-export const LoginScreen = () => {
+export const LoginScreen = ({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState<'email' | 'phone'>('phone');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isValid, setIsValid] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhone(filtered);
+    setIsVerified(false);
   };
 
-  const handleRequestOtp = () => {
-    if (activeTab === 'phone') {
-      if (phone.length !== 10) {
-        setError('Phone number must be 10 digits.');
-        return;
-      }
-    } else {
+  const handleVerify = () => {
+    if (activeTab === 'phone' && phone.length !== 10) {
+      setError('Phone number must be 10 digits.');
+      return;
+    }
+
+    if (activeTab === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         setError('Enter a valid email address.');
@@ -34,9 +36,33 @@ export const LoginScreen = () => {
     }
 
     setError('');
-    console.log('Requesting OTP...');
+    const contact = activeTab === 'phone' ? phone : email;
+    navigation.navigate('Otp', { contact, type: activeTab });
   };
 
+useEffect(() => {
+  if (route?.params?.verified) {
+    setIsVerified(true);
+
+    if (route.params?.type === 'phone') {
+      setActiveTab('phone');
+      setPhone(route.params.contact || '');
+    } else if (route.params?.type === 'email') {
+      setActiveTab('email');
+      setEmail(route.params.contact || '');
+    }
+  } else {
+    // fallback: just populate contact without verifying
+    if (route?.params?.type === 'phone') {
+      setPhone(route.params?.contact || '');
+    } else if (route?.params?.type === 'email') {
+      setEmail(route.params?.contact || '');
+    }
+  }
+}, [route?.params]);
+
+
+  // ✅ THIS useEffect ENSURES `isValid` UPDATES CORRECTLY
   useEffect(() => {
     if (activeTab === 'phone') {
       setIsValid(phone.length === 10);
@@ -57,6 +83,7 @@ export const LoginScreen = () => {
           onPress={() => {
             setActiveTab('email');
             setError('');
+            setIsVerified(false);
           }}
         >
           <Text style={[styles.tabText, activeTab === 'email' && styles.activeTabText]}>
@@ -69,6 +96,7 @@ export const LoginScreen = () => {
           onPress={() => {
             setActiveTab('phone');
             setError('');
+            setIsVerified(false);
           }}
         >
           <Text style={[styles.tabText, activeTab === 'phone' && styles.activeTabText]}>
@@ -77,26 +105,32 @@ export const LoginScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Phone Input */}
       {activeTab === 'phone' && (
         <View style={{ marginTop: 20, width: '100%' }}>
           <Text style={styles.label}>Phone no..</Text>
           <View style={styles.inputWrapper}>
             <TextInput
-              placeholder="Enter Your phone number"
+              placeholder="Enter your phone number"
               style={styles.input}
               keyboardType="number-pad"
               maxLength={10}
               value={phone}
               onChangeText={handlePhoneChange}
             />
-            {isValid && <Text style={styles.verifyTextInline}>Verify</Text>}
+            {isVerified ? (
+              <Text style={styles.verifyTextInline}>Verified</Text>
+            ) : (
+              isValid && (
+                <TouchableOpacity onPress={handleVerify}>
+                  <Text style={styles.verifyTextInline}>Verify</Text>
+                </TouchableOpacity>
+              )
+            )}
           </View>
           {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
       )}
 
-      {/* Email Input */}
       {activeTab === 'email' && (
         <View style={{ marginTop: 20, width: '100%' }}>
           <Text style={styles.label}>Email</Text>
@@ -106,16 +140,31 @@ export const LoginScreen = () => {
               style={styles.input}
               keyboardType="email-address"
               value={email}
-              onChangeText={(text) => setEmail(text)}
+              onChangeText={(text) => {
+                setEmail(text);
+                setIsVerified(false);
+              }}
             />
-            {isValid && <Text style={styles.verifyTextInline}>Verify</Text>}
+            {isVerified ? (
+              <Text style={styles.verifyTextInline}>Verified</Text>
+            ) : (
+              isValid && (
+                <TouchableOpacity onPress={handleVerify}>
+                  <Text style={styles.verifyTextInline}>Verify</Text>
+                </TouchableOpacity>
+              )
+            )}
           </View>
           {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
       )}
 
-      <TouchableOpacity style={styles.otpButton} onPress={handleRequestOtp}>
-        <Text style={styles.otpButtonText}>Request OTP</Text>
+      <TouchableOpacity
+        style={[styles.otpButton, (!isValid || !isVerified) && styles.otpButtonDisabled]}
+        onPress={() => console.log('Login Successful')}
+        disabled={!isValid || !isVerified}
+      >
+        <Text style={styles.otpButtonText}>Login</Text>
       </TouchableOpacity>
 
       <View style={styles.dividerContainer}>
@@ -142,126 +191,3 @@ export const LoginScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    backgroundColor: '#fff',
-    paddingTop: 60,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: '#777',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#e8f0fe',
-    borderRadius: 30,
-    padding: 4,
-    marginTop: 48,
-    height: 56,
-  },
-  tab: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 30,
-    height: '100%',
-  },
-  activeTab: {
-    backgroundColor: '#fff',
-    elevation: 2,
-  },
-  tabText: {
-    color: '#888',
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: '#000',
-    fontWeight: '600',
-  },
-  label: {
-    fontSize: 14,
-    color: '#000',
-    marginBottom: 16,
-    marginTop: 24,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    height: 50,
-    backgroundColor: '#fff',
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000',
-  },
-  verifyTextInline: {
-    color: '#0a7cf3',
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  errorText: {
-    color: 'red',
-    marginTop: 8,
-    fontSize: 12,
-  },
-  otpButton: {
-    marginTop: 43,
-    backgroundColor: '#0a7cf3',
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: 'center',
-  },
-  otpButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 61,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ddd',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: 'black',
-    fontSize: 12,
-  },
-  googleButton: {
-    backgroundColor: '#e8f0fe',
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: 'center',
-    marginBottom: 46,
-  },
-  googleText: {
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  registerText: {
-    textAlign: 'center',
-    color: '#444',
-  },
-  createAccount: {
-    color: '#f77',
-    fontWeight: '600',
-  },
-});
