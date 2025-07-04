@@ -1,16 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Dimensions,
-  Platform,
-  KeyboardAvoidingView,
-  Alert,
+  View, Text, StyleSheet, Image, TouchableOpacity, TextInput,
+  ScrollView, Dimensions, Platform, KeyboardAvoidingView, Alert,
 } from 'react-native';
 import { ArrowBack, EditIcon } from '../assets';
 
@@ -19,7 +10,7 @@ const { width } = Dimensions.get('window');
 export const OtpScreen = ({ navigation, route }) => {
   const [otp, setOtp] = useState(['', '', '', '']);
   const inputRefs = useRef([]);
-  const { contact, type } = route.params || {};
+  const { contact, type, source } = route.params || {};
   const displayText = type === 'phone' ? `+91 ${contact}` : contact;
 
   const handleChange = (text, index) => {
@@ -31,43 +22,46 @@ export const OtpScreen = ({ navigation, route }) => {
     }
   };
 
-  const goToLoginScreen = (isVerified = false) => {
-    navigation.navigate('LoginScreen', { verified: isVerified, contact, type });
+  const goBackToSource = (isVerified = false) => {
+    const target = source === 'create' ? 'CreateAccountScreen' : 'LoginScreen';
+    const navParams = isVerified
+      ? {
+          verified: true,
+          contact,
+          type,
+        }
+      : {
+          contact,
+          type,
+        };
+
+    navigation.navigate(target, navParams);
   };
 
   const handleSubmit = () => {
     const enteredOtp = otp.join('');
     if (enteredOtp === '8812') {
-      goToLoginScreen(true); // ✅ Verified true only after correct OTP
+      goBackToSource(true);
     } else {
       Alert.alert('Invalid OTP', 'The entered OTP is incorrect.');
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1 }}
-    >
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => goToLoginScreen(false)} style={styles.backIcon}>
+          <TouchableOpacity onPress={() => goBackToSource(false)} style={styles.backIcon}>
             <ArrowBack width={24} height={24} fill="black" />
           </TouchableOpacity>
           <Text style={styles.title}>OTP</Text>
         </View>
 
-        <Image
-          source={require('../assets/images/otp_illustration.png')}
-          style={styles.image}
-        />
-
+        <Image source={require('../assets/images/otp_illustration.png')} style={styles.image} />
         <Text style={styles.header}>Verification code</Text>
-        <Text style={styles.subheader}>
-          We have sent an OTP code to your {type}
-        </Text>
+        <Text style={styles.subheader}>We have sent an OTP code to your {type}</Text>
 
-        <TouchableOpacity style={styles.phoneContainer} onPress={() => goToLoginScreen(false)}>
+        <TouchableOpacity style={styles.phoneContainer} onPress={() => goBackToSource(false)}>
           <Text style={styles.phone}>{displayText}</Text>
           <View style={styles.editCircle}>
             <EditIcon width={16} height={16} fill="white" />

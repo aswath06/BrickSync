@@ -19,7 +19,7 @@ export const LoginScreen = ({ navigation, route }) => {
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhone(filtered);
-    setIsVerified(false);
+    if (!route?.params?.verified) setIsVerified(false);
   };
 
   const handleVerify = () => {
@@ -38,32 +38,29 @@ export const LoginScreen = ({ navigation, route }) => {
 
     setError('');
     const contact = activeTab === 'phone' ? phone : email;
-    navigation.navigate('Otp', { contact, type: activeTab });
+    navigation.navigate('Otp', { contact, type: activeTab, source: 'login' });
   };
 
-useEffect(() => {
-  if (route?.params?.verified) {
-    setIsVerified(true);
+  useEffect(() => {
+    if (route?.params?.verified) {
+      setIsVerified(true);
 
-    if (route.params?.type === 'phone') {
-      setActiveTab('phone');
-      setPhone(route.params.contact || '');
-    } else if (route.params?.type === 'email') {
-      setActiveTab('email');
-      setEmail(route.params.contact || '');
+      if (route.params?.type === 'phone') {
+        setActiveTab('phone');
+        setPhone(route.params.contact || '');
+      } else if (route.params?.type === 'email') {
+        setActiveTab('email');
+        setEmail(route.params.contact || '');
+      }
+    } else {
+      if (route?.params?.type === 'phone') {
+        setPhone(route.params?.contact || '');
+      } else if (route?.params?.type === 'email') {
+        setEmail(route.params?.contact || '');
+      }
     }
-  } else {
-    // fallback: just populate contact without verifying
-    if (route?.params?.type === 'phone') {
-      setPhone(route.params?.contact || '');
-    } else if (route?.params?.type === 'email') {
-      setEmail(route.params?.contact || '');
-    }
-  }
-}, [route?.params]);
+  }, [route?.params]);
 
-
-  // ✅ THIS useEffect ENSURES `isValid` UPDATES CORRECTLY
   useEffect(() => {
     if (activeTab === 'phone') {
       setIsValid(phone.length === 10);
@@ -84,7 +81,7 @@ useEffect(() => {
           onPress={() => {
             setActiveTab('email');
             setError('');
-            setIsVerified(false);
+            if (!route?.params?.verified) setIsVerified(false);
           }}
         >
           <Text style={[styles.tabText, activeTab === 'email' && styles.activeTabText]}>
@@ -97,7 +94,7 @@ useEffect(() => {
           onPress={() => {
             setActiveTab('phone');
             setError('');
-            setIsVerified(false);
+            if (!route?.params?.verified) setIsVerified(false);
           }}
         >
           <Text style={[styles.tabText, activeTab === 'phone' && styles.activeTabText]}>
@@ -143,7 +140,7 @@ useEffect(() => {
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                setIsVerified(false);
+                if (!route?.params?.verified) setIsVerified(false);
               }}
             />
             {isVerified ? (
@@ -186,15 +183,14 @@ useEffect(() => {
       </TouchableOpacity>
 
       <Text style={styles.registerText}>
-  Not registered yet?{' '}
-  <Text
-    style={styles.createAccount}
-    onPress={() => navigation.navigate('CreateAccountScreen')}
-  >
-    Create an account
-  </Text>
-</Text>
-
+        Not registered yet?{' '}
+        <Text
+          style={styles.createAccount}
+          onPress={() => navigation.navigate('CreateAccountScreen')}
+        >
+          Create an account
+        </Text>
+      </Text>
     </View>
   );
 };
