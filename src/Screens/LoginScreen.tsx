@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import { styles } from './LoginScreen.styles';
 
@@ -185,9 +186,15 @@ useEffect(() => {
       </TouchableOpacity>
 
       <Text style={styles.registerText}>
-        Not registered yet?{' '}
-        <Text style={styles.createAccount}>Create an account</Text>
-      </Text>
+  Not registered yet?{' '}
+  <Text
+    style={styles.createAccount}
+    onPress={() => navigation.navigate('CreateAccountScreen')}
+  >
+    Create an account
+  </Text>
+</Text>
+
     </View>
   );
 };
