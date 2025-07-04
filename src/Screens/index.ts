@@ -4,3 +4,4 @@ export * from './FirstPage';
 export * from './LoginScreen';
 export * from './OtpScreen';
 export * from './CreateAccountScreen';
+export * from './DashboardScreen';
