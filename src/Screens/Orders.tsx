@@ -14,12 +14,14 @@ import {
   BagIcon,
 } from '../assets';
 import { SearchIcon } from '../assets/icons/SearchIcon';
-import products from './products.json';
+import { useProductStore } from '../stores/useProductStore';
 
 const filterCategories = ['All', 'Cement', 'Sand', 'Bricks'];
 
 export const Orders = ({ navigation }: any) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
+
+  const { products } = useProductStore();
 
   const filteredProducts =
     selectedFilter === 'All'
@@ -29,8 +31,10 @@ export const Orders = ({ navigation }: any) => {
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('ProductDetails', { product: item })}
-    >
+      onPress={() => navigation.navigate('ProductDetails', { productId: item.id })}
+    accessibilityRole="button"
+    activeOpacity={0.8}
+  >
       <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="contain" />
       <TouchableOpacity style={styles.heart}>
         <Text style={styles.heartIcon}>💙</Text>
@@ -46,13 +50,17 @@ export const Orders = ({ navigation }: any) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Place Your Order</Text>
-        <TouchableOpacity style={styles.bagIconWrapper}>
-          <BagIcon width={48} height={48} />
-        </TouchableOpacity>
+<TouchableOpacity
+  style={styles.bagIconWrapper}
+  onPress={() => navigation.navigate('Cart')}
+>
+  <BagIcon width={48} height={48} />
+</TouchableOpacity>
+
       </View>
 
       <View style={styles.searchBox}>
@@ -103,10 +111,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: { fontSize: 18, fontWeight: '600', color: '#1E1E1E' },
-  bagIconWrapper: {
-    width: 48,
-    height: 48,
-  },
+  bagIconWrapper: { width: 48, height: 48 },
   searchBox: {
     height: 47,
     width: '100%',
@@ -117,18 +122,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  input: {
-    fontSize: 14,
-    flex: 1,
-    color: '#333',
-    marginLeft: 8,
-  },
-  filters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16,
-  },
+  input: { fontSize: 14, flex: 1, color: '#333', marginLeft: 8 },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   filter: {
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -142,20 +137,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  filterText: {
-    fontSize: 12,
-    color: '#444',
-  },
-  filterTextActive: {
-    fontSize: 12,
-    color: '#fff',
-  },
-  productList: {
-    paddingBottom: 80,
-  },
-  row: {
-    justifyContent: 'space-between',
-  },
+  filterText: { fontSize: 12, color: '#444' },
+  filterTextActive: { fontSize: 12, color: '#fff' },
+  productList: { paddingBottom: 80 },
+  row: { justifyContent: 'space-between' },
   card: {
     backgroundColor: '#EAF1FB',
     borderRadius: 16,
@@ -164,10 +149,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     position: 'relative',
   },
-  image: {
-    width: '100%',
-    height: 100,
-  },
+  image: { width: '100%', height: 100 },
   heart: {
     position: 'absolute',
     top: 10,
@@ -176,20 +158,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  heartIcon: {
-    fontSize: 14,
-  },
-  category: {
-    fontSize: 12,
-    color: '#777',
-    marginTop: 8,
-  },
-  size: {
-    fontSize: 13,
-    color: '#333',
-  },
-  price: {
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
+  heartIcon: { fontSize: 14 },
+  category: { fontSize: 12, color: '#777', marginTop: 8 },
+  size: { fontSize: 13, color: '#333' },
+  price: { fontSize: 15, fontWeight: 'bold' },
 });

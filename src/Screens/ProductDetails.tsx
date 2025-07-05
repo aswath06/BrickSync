@@ -9,13 +9,32 @@ import {
   Animated,
   Easing,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { ArrowBack } from '../assets';
+import { useProductStore } from '../stores/useProductStore';
 
 const { height } = Dimensions.get('window');
 
 export const ProductDetails = ({ route, navigation }: any) => {
-  const { product } = route.params;
+  const { productId, product: passedProduct } = route.params;
+
+  // Load product either from params or Zustand store by id
+  const product =
+    passedProduct || useProductStore.getState().getProductById(productId);
+
+  // If product not found, show fallback UI
+  if (!product) {
+    return (
+      <View style={styles.center}>
+        <Text>Product not found.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={{ color: 'blue' }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const isTypeSelectable = !!product.typeOptions;
   const isSandCategory = product.category === 'Sand';
 
@@ -24,25 +43,41 @@ export const ProductDetails = ({ route, navigation }: any) => {
 
   const sizes =
     isTypeSelectable && selectedType
-      ? product.typeOptions[selectedType]
-      : product.availableSizes || [product.size];
+      ? product.typeOptions![selectedType]
+      : product.availableSizes || [product.size!];
 
   const [selectedSize, setSelectedSize] = useState(sizes[0]);
   const [quantity, setQuantity] = useState('');
   const description = product.description || 'No description available.';
-  const unitPrice = parseInt(product.price.replace(/[^\d]/g, ''));
+  const unitPrice = parseInt(product.price.replace(/[^\d]/g, ''), 10);
 
   const animScale = useRef(new Animated.Value(1)).current;
   const animTranslateY = useRef(new Animated.Value(0)).current;
 
   const handleAddToCart = () => {
-    // Log selected data
+    const qty = Number(quantity);
+    if (!qty || qty <= 0) {
+      alert('Please enter a valid quantity.');
+      return;
+    }
+
+    const total = qty * unitPrice;
+
+    // Add to Zustand cart store
+    useProductStore.getState().addToCart({
+      product,
+      selectedType,
+      selectedSize,
+      quantity: qty,
+      total,
+    });
+
     console.log({
       product: product.name,
       selectedType,
       selectedSize,
-      quantity,
-      total: Number(quantity) * unitPrice,
+      quantity: qty,
+      total,
     });
 
     // Animation for full screen (excluding header)
@@ -60,7 +95,6 @@ export const ProductDetails = ({ route, navigation }: any) => {
         easing: Easing.in(Easing.cubic),
       }),
     ]).start(() => {
-      // Reset animation values after effect (optional)
       animScale.setValue(1);
       animTranslateY.setValue(0);
     });
@@ -68,10 +102,10 @@ export const ProductDetails = ({ route, navigation }: any) => {
 
   useEffect(() => {
     if (isTypeSelectable && selectedType) {
-      const defaultSize = product.typeOptions[selectedType][0];
+      const defaultSize = product.typeOptions![selectedType][0];
       setSelectedSize(defaultSize);
     }
-  }, [selectedType]);
+  }, [selectedType, product.typeOptions, isTypeSelectable]);
 
   return (
     <View style={styles.container}>
@@ -90,10 +124,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
       <Animated.View
         style={{
           flex: 1,
-          transform: [
-            { scale: animScale },
-            { translateY: animTranslateY },
-          ],
+          transform: [{ scale: animScale }, { translateY: animTranslateY }],
         }}
       >
         {/* Product Image */}
@@ -105,95 +136,101 @@ export const ProductDetails = ({ route, navigation }: any) => {
 
         {/* Bottom Sheet */}
         <View style={styles.bottomSheet}>
-          <View style={styles.dragHandle} />
-          <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.price}>{product.price}</Text>
-          <Text style={styles.descriptionLabel}>Description</Text>
-          <Text style={styles.details}>{description}</Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            nestedScrollEnabled={true}
+          >
+            <View style={styles.dragHandle} />
+            <Text style={styles.productName}>{product.name}</Text>
+            <Text style={styles.price}>{product.price}</Text>
+            <Text style={styles.descriptionLabel}>Description</Text>
+            <Text style={styles.details}>{description}</Text>
 
-          {/* Type Selector */}
-          {isTypeSelectable && (
-            <>
-              <Text style={styles.chooseSize}>Choose Type</Text>
-              <View style={styles.sizeRow}>
-                {types.map((type: string) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.sizeButton,
-                      selectedType === type && styles.sizeButtonActive,
-                    ]}
-                    onPress={() => setSelectedType(type)}
-                  >
-                    <Text
-                      style={
-                        selectedType === type
-                          ? styles.sizeTextActive
-                          : styles.sizeText
-                      }
+            {/* Type Selector */}
+            {isTypeSelectable && (
+              <>
+                <Text style={styles.chooseSize}>Choose Type</Text>
+                <View style={styles.sizeRow}>
+                  {types!.map((type: string) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.sizeButton,
+                        selectedType === type && styles.sizeButtonActive,
+                      ]}
+                      onPress={() => setSelectedType(type)}
                     >
-                      {type}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </>
-          )}
+                      <Text
+                        style={
+                          selectedType === type
+                            ? styles.sizeTextActive
+                            : styles.sizeText
+                        }
+                      >
+                        {type}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
 
-          {/* Size Selector */}
-          {!isSandCategory && (
-            <>
-              <Text style={styles.chooseSize}>Choose Size</Text>
-              <View style={styles.sizeRow}>
-                {sizes.map((size: string) => (
-                  <TouchableOpacity
-                    key={size}
-                    style={[
-                      styles.sizeButton,
-                      selectedSize === size && styles.sizeButtonActive,
-                    ]}
-                    onPress={() => setSelectedSize(size)}
-                  >
-                    <Text
-                      style={
-                        selectedSize === size
-                          ? styles.sizeTextActive
-                          : styles.sizeText
-                      }
+            {/* Size Selector */}
+            {!isSandCategory && (
+              <>
+                <Text style={styles.chooseSize}>Choose Size</Text>
+                <View style={styles.sizeRow}>
+                  {sizes.map((size: string) => (
+                    <TouchableOpacity
+                      key={size}
+                      style={[
+                        styles.sizeButton,
+                        selectedSize === size && styles.sizeButtonActive,
+                      ]}
+                      onPress={() => setSelectedSize(size)}
                     >
-                      {size}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </>
-          )}
+                      <Text
+                        style={
+                          selectedSize === size
+                            ? styles.sizeTextActive
+                            : styles.sizeText
+                        }
+                      >
+                        {size}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
 
-          {/* Quantity */}
-          <Text style={styles.quantity}>Quantity</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Enter quantity"
-            placeholderTextColor="#aaa"
-            value={quantity}
-            onChangeText={setQuantity}
-          />
+            {/* Quantity */}
+            <Text style={styles.quantity}>Quantity</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="Enter quantity"
+              placeholderTextColor="#aaa"
+              value={quantity}
+              onChangeText={setQuantity}
+            />
 
-          {/* Total Summary */}
-          {quantity !== '' && !isNaN(Number(quantity)) && (
-            <>
-              <Text style={styles.summaryText}>Selected Quantity: {quantity}</Text>
-              <Text style={styles.summaryText}>
-                Total Price: ₹{Number(quantity) * unitPrice}
-              </Text>
-            </>
-          )}
+            {/* Total Summary */}
+            {quantity !== '' && !isNaN(Number(quantity)) && (
+              <>
+                <Text style={styles.summaryText}>Selected Quantity: {quantity}</Text>
+                <Text style={styles.summaryText}>
+                  Total Price: ₹{Number(quantity) * unitPrice}
+                </Text>
+              </>
+            )}
 
-          {/* Add to Cart Button */}
-          <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
-            <Text style={styles.cartText}>Add to Cart</Text>
-          </TouchableOpacity>
+            {/* Add to Cart Button */}
+            <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
+              <Text style={styles.cartText}>Add to Cart</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </Animated.View>
     </View>
@@ -202,6 +239,8 @@ export const ProductDetails = ({ route, navigation }: any) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', position: 'relative' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  backBtn: { marginTop: 20 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,6 +264,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
+    flex: 1,
   },
   dragHandle: {
     width: 40,
@@ -287,3 +327,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 });
+function alert(arg0: string) {
+  throw new Error('Function not implemented.');
+}
+
