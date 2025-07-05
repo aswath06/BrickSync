@@ -5,3 +5,7 @@ export * from './LoginScreen';
 export * from './OtpScreen';
 export * from './CreateAccountScreen';
 export * from './DashboardScreen';
+export * from './Truck';
+export * from './Orders';
+export * from './Profile';
+export * from './Settings';

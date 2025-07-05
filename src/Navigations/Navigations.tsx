@@ -3,6 +3,7 @@ import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import { CreateAccountScreen, DashboardScreen, FirstPage, GetStarted, HomeScreen, LoginScreen, OtpScreen } from '../Screens';
+import { BottomNavigation } from './BottomNavigation';
 // Screens
 
 const RootStack = createNativeStackNavigator();
@@ -17,7 +18,12 @@ export const Navigation = () => {
         <RootStack.Screen name="LoginScreen" component={LoginScreen} options={{headerShown: false}}/>
         <RootStack.Screen name="Otp" component={OtpScreen} options={{headerShown:false}} />
         <RootStack.Screen name="CreateAccountScreen" component={CreateAccountScreen} options={{headerShown:false}} />
-         <RootStack.Screen name="DashboardScreen" component={DashboardScreen} options={{headerShown:false}} />
+        <RootStack.Screen
+  name="DashboardScreen"
+  component={BottomNavigation} // <-- NOT DashboardScreen
+  options={{headerShown: false}}
+/>
+
 
       </RootStack.Navigator>
     </NavigationContainer>

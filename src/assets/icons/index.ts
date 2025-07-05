@@ -2,3 +2,8 @@ export * from './BellIcons';
 export * from './ArrowBack';
 export * from './EditIcon';
 export * from './TruckIcon';
+export * from './ClockIcon';
+export * from './HomeIcon';
+export * from './PersonIcon';
+export * from './SettingsIcon';
+export * from './MenuIcon';

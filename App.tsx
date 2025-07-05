@@ -1,20 +1,16 @@
 import React from 'react';
-// Native components
 import {SafeAreaView, StatusBar, StyleSheet} from 'react-native';
-import { Navigation } from './src/Navigations/Navigations';
-// Context
-//Navigation
+import {Navigation} from './src/Navigations/Navigations';
 
 function App(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.root}>
-        <StatusBar
-          barStyle={'dark-content'}
-          translucent
-          backgroundColor="transparent"
-
-        />
-        <Navigation />
+      <StatusBar
+        barStyle="dark-content"
+        translucent
+        backgroundColor="transparent"
+      />
+      <Navigation />
     </SafeAreaView>
   );
 }
