@@ -1,17 +1,27 @@
 import React from 'react';
-import Svg, { Path, SvgProps } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
-export const ArrowBack: React.FC<SvgProps> = (props) => {
+type ArrowBackProps = {
+  width?: number;
+  height?: number;
+  color?: string;
+};
+
+export const ArrowBack: React.FC<ArrowBackProps> = ({
+  width = 24,
+  height = 24,
+  color = '#e3e3e3',
+  ...props
+}) => {
   return (
     <Svg
-      height="24px"
-      width="24px"
+      width={width}
+      height={height}
       viewBox="0 -960 960 960"
-      fill="#e3e3e3"
+      fill={color}
       {...props}
     >
       <Path d="M313-440l224 224-57 56-320-320 320-320 57 56-224 224h487v80H313z" />
     </Svg>
   );
 };
-

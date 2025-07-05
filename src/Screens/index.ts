@@ -9,3 +9,4 @@ export * from './Truck';
 export * from './Orders';
 export * from './Profile';
 export * from './Settings';
+export * from './ProductDetails';
