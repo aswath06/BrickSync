@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Animated,
+  Easing,
+  Dimensions,
 } from 'react-native';
 import { ArrowBack } from '../assets';
+
+const { height } = Dimensions.get('window');
 
 export const ProductDetails = ({ route, navigation }: any) => {
   const { product } = route.params;
@@ -25,9 +30,41 @@ export const ProductDetails = ({ route, navigation }: any) => {
   const [selectedSize, setSelectedSize] = useState(sizes[0]);
   const [quantity, setQuantity] = useState('');
   const description = product.description || 'No description available.';
-
-  // Extract numeric price
   const unitPrice = parseInt(product.price.replace(/[^\d]/g, ''));
+
+  const animScale = useRef(new Animated.Value(1)).current;
+  const animTranslateY = useRef(new Animated.Value(0)).current;
+
+  const handleAddToCart = () => {
+    // Log selected data
+    console.log({
+      product: product.name,
+      selectedType,
+      selectedSize,
+      quantity,
+      total: Number(quantity) * unitPrice,
+    });
+
+    // Animation for full screen (excluding header)
+    Animated.parallel([
+      Animated.timing(animScale, {
+        toValue: 0.1,
+        duration: 700,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }),
+      Animated.timing(animTranslateY, {
+        toValue: height / 2,
+        duration: 700,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.cubic),
+      }),
+    ]).start(() => {
+      // Reset animation values after effect (optional)
+      animScale.setValue(1);
+      animTranslateY.setValue(0);
+    });
+  };
 
   useEffect(() => {
     if (isTypeSelectable && selectedType) {
@@ -49,81 +86,116 @@ export const ProductDetails = ({ route, navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      {/* Product Image */}
-      <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="contain" />
-
-      {/* Bottom Sheet */}
-      <View style={styles.bottomSheet}>
-        <View style={styles.dragHandle} />
-        <Text style={styles.productName}>{product.name}</Text>
-        <Text style={styles.price}>{product.price}</Text>
-        <Text style={styles.descriptionLabel}>Description</Text>
-        <Text style={styles.details}>{description}</Text>
-
-        {/* Type Selector */}
-        {isTypeSelectable && (
-          <>
-            <Text style={styles.chooseSize}>Choose Type</Text>
-            <View style={styles.sizeRow}>
-              {types.map((type: string) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.sizeButton, selectedType === type && styles.sizeButtonActive]}
-                  onPress={() => setSelectedType(type)}>
-                  <Text style={selectedType === type ? styles.sizeTextActive : styles.sizeText}>
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Size Selector - Hidden for Sand */}
-        {!isSandCategory && (
-          <>
-            <Text style={styles.chooseSize}>Choose Size</Text>
-            <View style={styles.sizeRow}>
-              {sizes.map((size: string) => (
-                <TouchableOpacity
-                  key={size}
-                  style={[styles.sizeButton, selectedSize === size && styles.sizeButtonActive]}
-                  onPress={() => setSelectedSize(size)}>
-                  <Text style={selectedSize === size ? styles.sizeTextActive : styles.sizeText}>
-                    {size}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Quantity */}
-        <Text style={styles.quantity}>Quantity</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Enter quantity"
-          placeholderTextColor="#aaa"
-          value={quantity}
-          onChangeText={setQuantity}
+      {/* Animated Content */}
+      <Animated.View
+        style={{
+          flex: 1,
+          transform: [
+            { scale: animScale },
+            { translateY: animTranslateY },
+          ],
+        }}
+      >
+        {/* Product Image */}
+        <Image
+          source={{ uri: product.imageUrl }}
+          style={styles.image}
+          resizeMode="contain"
         />
 
-        {/* Quantity Summary */}
-        {quantity !== '' && !isNaN(Number(quantity)) && (
-          <>
-            <Text style={styles.summaryText}>Selected Quantity: {quantity}</Text>
-            <Text style={styles.summaryText}>
-              Total Price: ₹{Number(quantity) * unitPrice}
-            </Text>
-          </>
-        )}
+        {/* Bottom Sheet */}
+        <View style={styles.bottomSheet}>
+          <View style={styles.dragHandle} />
+          <Text style={styles.productName}>{product.name}</Text>
+          <Text style={styles.price}>{product.price}</Text>
+          <Text style={styles.descriptionLabel}>Description</Text>
+          <Text style={styles.details}>{description}</Text>
 
-        {/* Add to Cart Button */}
-        <TouchableOpacity style={styles.cartButton}>
-          <Text style={styles.cartText}>Add to Cart</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Type Selector */}
+          {isTypeSelectable && (
+            <>
+              <Text style={styles.chooseSize}>Choose Type</Text>
+              <View style={styles.sizeRow}>
+                {types.map((type: string) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.sizeButton,
+                      selectedType === type && styles.sizeButtonActive,
+                    ]}
+                    onPress={() => setSelectedType(type)}
+                  >
+                    <Text
+                      style={
+                        selectedType === type
+                          ? styles.sizeTextActive
+                          : styles.sizeText
+                      }
+                    >
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Size Selector */}
+          {!isSandCategory && (
+            <>
+              <Text style={styles.chooseSize}>Choose Size</Text>
+              <View style={styles.sizeRow}>
+                {sizes.map((size: string) => (
+                  <TouchableOpacity
+                    key={size}
+                    style={[
+                      styles.sizeButton,
+                      selectedSize === size && styles.sizeButtonActive,
+                    ]}
+                    onPress={() => setSelectedSize(size)}
+                  >
+                    <Text
+                      style={
+                        selectedSize === size
+                          ? styles.sizeTextActive
+                          : styles.sizeText
+                      }
+                    >
+                      {size}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Quantity */}
+          <Text style={styles.quantity}>Quantity</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            placeholder="Enter quantity"
+            placeholderTextColor="#aaa"
+            value={quantity}
+            onChangeText={setQuantity}
+          />
+
+          {/* Total Summary */}
+          {quantity !== '' && !isNaN(Number(quantity)) && (
+            <>
+              <Text style={styles.summaryText}>Selected Quantity: {quantity}</Text>
+              <Text style={styles.summaryText}>
+                Total Price: ₹{Number(quantity) * unitPrice}
+              </Text>
+            </>
+          )}
+
+          {/* Add to Cart Button */}
+          <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
+            <Text style={styles.cartText}>Add to Cart</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
     </View>
   );
 };
@@ -143,10 +215,6 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: 400 },
 
   bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#f0f0f0',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
