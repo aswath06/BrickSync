@@ -13,3 +13,6 @@ export * from './CustomerIcon';
 export * from './SandIcon';
 export * from './BagOutlineIcon';
 export * from './BrickIcon';
+export * from './FrontTruck';
+export * from './TwoPersonIcon';
+export * from './DropdownIcon';
