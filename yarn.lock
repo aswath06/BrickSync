@@ -2203,6 +2203,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-picker/picker@npm:^2.11.1":
+  version: 2.11.1
+  resolution: "@react-native-picker/picker@npm:2.11.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: b662be771b89ed34704a5753f54fc11a2e65e11de14624756898c344291ecc43d1b1a2dae05190ad997eb461bb66a55e71239dc60608c5f88a246804536778b9
+  languageName: node
+  linkType: hard
+
 "@react-native/assets-registry@npm:0.75.5":
   version: 0.75.5
   resolution: "@react-native/assets-registry@npm:0.75.5"
@@ -2942,6 +2952,7 @@ __metadata:
     "@babel/preset-env": ^7.20.0
     "@babel/runtime": ^7.20.0
     "@react-native-async-storage/async-storage": ^2.2.0
+    "@react-native-picker/picker": ^2.11.1
     "@react-native/babel-preset": 0.75.5
     "@react-native/eslint-config": 0.75.5
     "@react-native/metro-config": 0.75.5
