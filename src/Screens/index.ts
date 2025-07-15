@@ -11,3 +11,6 @@ export * from './Profile';
 export * from './Settings';
 export * from './ProductDetails';
 export * from './CartScreen';
+export * from './AdminTruckView';
+export * from './DriverTruckView';
+export * from './DamageHistory';
