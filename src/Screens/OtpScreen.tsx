@@ -4,6 +4,8 @@ import {
   ScrollView, Dimensions, Platform, KeyboardAvoidingView, Alert,
 } from 'react-native';
 import { ArrowBack, EditIcon } from '../assets';
+import { verifyUrl, VerifyOtpEndpoint } from '../../config';
+
 
 const { width } = Dimensions.get('window');
 
@@ -38,14 +40,51 @@ export const OtpScreen = ({ navigation, route }) => {
     navigation.navigate(target, navParams);
   };
 
-  const handleSubmit = () => {
-    const enteredOtp = otp.join('');
-    if (enteredOtp === '8812') {
-      goBackToSource(true);
-    } else {
-      Alert.alert('Invalid OTP', 'The entered OTP is incorrect.');
-    }
+  // const handleSubmit = () => {
+  //   const enteredOtp = otp.join('');
+  //   if (enteredOtp === '8812') {
+  //     goBackToSource(true);
+  //   } else {
+  //     Alert.alert('Invalid OTP', 'The entered OTP is incorrect.');
+  //   }
+  // };
+  const handleSubmit = async () => {
+  const enteredOtp = otp.join('');
+  if (enteredOtp.length !== 4) {
+    Alert.alert('Error', 'Please enter the complete 4-digit OTP.');
+    return;
+  }
+
+  const payload = {
+    [type === 'phone' ? 'phone' : 'email']: contact,
+    otp: enteredOtp,
   };
+
+  console.log('Sending OTP verification data:', payload);
+
+  try {
+    const response = await fetch(`${verifyUrl}${VerifyOtpEndpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Invalid OTP', data.message || 'The entered OTP is incorrect.');
+      return;
+    }
+
+    goBackToSource(true);
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    Alert.alert('Error', 'Verification failed due to network error');
+  }
+};
+
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

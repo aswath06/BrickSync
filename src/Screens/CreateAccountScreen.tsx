@@ -1,3 +1,4 @@
+// CreateAccountScreen.js
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -9,6 +10,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAccountStore } from '../stores/useAccountStore';
+import {
+  baseUrl,
+  SendOtpWhatsappEndpoint, // ✅ use WhatsApp-specific OTP endpoint
+  VerifyOtpEndpoint,
+  RegisterEndpoint,
+} from '../../config';
 
 export const CreateAccountScreen = ({ navigation, route }) => {
   const [name, setName] = useState('');
@@ -19,6 +26,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
   const [verifiedPhone, setVerifiedPhone] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordMatchError, setPasswordMatchError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const setAccount = useAccountStore((state) => state.setAccount);
 
@@ -52,53 +60,154 @@ export const CreateAccountScreen = ({ navigation, route }) => {
     verifiedPhone &&
     isValidEmail(email);
 
-  const handleVerifyPhone = () => {
+  const handleVerifyPhone = async () => {
     if (phone.length !== 10) {
       Alert.alert('Error', 'Enter a valid 10-digit phone number');
       return;
     }
 
-    setAccount({
-      name,
-      email,
-      phone,
-      password,
-      confirmPassword,
-      verifiedPhone: false,
-    });
+    try {
+      const res = await fetch(`${baseUrl}${SendOtpWhatsappEndpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone }), // ✅ Only phone for WhatsApp
+      });
 
-    navigation.navigate('Otp', {
-      contact: phone,
-      type: 'phone',
-      source: 'create',
-      name,
-      email,
-      password,
-      confirmPassword,
-    });
+      const data = await res.json();
+
+      if (!res.ok) {
+        Alert.alert('Failed', data.message || 'Failed to send OTP');
+        return;
+      }
+
+      setAccount({
+        name,
+        email,
+        phone,
+        password,
+        confirmPassword,
+        verifiedPhone: false,
+      });
+
+      navigation.navigate('Otp', {
+        contact: phone,
+        type: 'phone',
+        source: 'create',
+        name,
+        email,
+        password,
+        confirmPassword,
+      });
+    } catch (err) {
+      console.error('OTP send error:', err);
+      Alert.alert('Error', 'Network error while sending OTP');
+    }
   };
 
-  const handleRegister = () => {
-    setAccount({
-      name,
-      email,
-      phone,
-      password,
-      confirmPassword,
-      verifiedPhone,
+//   const handleRegister = async () => {
+//   if (loading) return;
+//   setLoading(true);
+
+//   const userid = generateUserId();
+
+//   setAccount({
+//     name,
+//     email,
+//     phone,
+//     password,
+//     confirmPassword,
+//     verifiedPhone,
+//   });
+
+//   try {
+//     const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         name,
+//         email,
+//         phone,
+//         password,
+//         userid,       // ✅ Add this
+//         userrole: 3,  // ✅ Add this
+//       }),
+//     });
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       Alert.alert('Registration Failed', data.message || 'Something went wrong');
+//       return;
+//     }
+
+//     Alert.alert('Success', 'Account registered successfully!');
+//     navigation.navigate('LoginScreen');
+//   } catch (error) {
+//     console.error('Registration error:', error);
+//     Alert.alert('Error', 'Could not register at this time.');
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+const handleRegister = async () => {
+  if (loading) return;
+  setLoading(true);
+
+  const userid = generateUserId();
+
+  setAccount({
+    name,
+    email,
+    phone,
+    password,
+    confirmPassword,
+    verifiedPhone,
+  });
+
+  const payload = {
+    name,
+    email,
+    phone,
+    password,
+    userid,
+    userrole: 3,
+  };
+
+  console.log('🔍 Sending registration payload:', payload);
+
+  try {
+    const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
 
-    console.log('Registered Account:', {
-      name,
-      email,
-      phone,
-      password,
-      confirmPassword,
-      verifiedPhone,
-    });
+    const data = await response.json();
+
+    console.log('📩 Registration response:', response.status, data);
+
+    if (!response.ok) {
+      Alert.alert('Registration Failed', data.message || 'Something went wrong');
+      return;
+    }
 
     Alert.alert('Success', 'Account registered successfully!');
-  };
+    navigation.navigate('LoginScreen');
+  } catch (error) {
+    console.error('❌ Registration error:', error);
+    Alert.alert('Error', 'Could not register at this time.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -163,25 +272,23 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-        
         <View style={styles.inputBox}>
-  <Text style={styles.label}>Password</Text>
-  <TextInput
-    placeholder="Minimum 8 characters"
-    value={password}
-    onChangeText={(val) => {
-      setPassword(val);
-      setAccount({ password: val });
-      setPasswordMatchError(val === confirmPassword ? '' : 'Passwords do not match');
-    }}
-    secureTextEntry
-    style={styles.input}
-  />
-  {password.length > 0 && password.length < 8 && (
-    <Text style={styles.warningText}>Password must be at least 8 characters.</Text>
-  )}
-</View>
-
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            placeholder="Minimum 8 characters"
+            value={password}
+            onChangeText={(val) => {
+              setPassword(val);
+              setAccount({ password: val });
+              setPasswordMatchError(val === confirmPassword ? '' : 'Passwords do not match');
+            }}
+            secureTextEntry
+            style={styles.input}
+          />
+          {password.length > 0 && password.length < 8 && (
+            <Text style={styles.warningText}>Password must be at least 8 characters.</Text>
+          )}
+        </View>
 
         <View style={styles.inputBox}>
           <Text style={styles.label}>Confirm password</Text>
@@ -200,11 +307,13 @@ export const CreateAccountScreen = ({ navigation, route }) => {
         </View>
 
         <TouchableOpacity
-          style={[styles.requestBtn, { opacity: isFormValid ? 1 : 0.5 }]}
-          disabled={!isFormValid}
+          style={[styles.requestBtn, { opacity: isFormValid && !loading ? 1 : 0.5 }]}
+          disabled={!isFormValid || loading}
           onPress={handleRegister}
         >
-          <Text style={styles.requestBtnText}>Register</Text>
+          <Text style={styles.requestBtnText}>
+            {loading ? 'Registering...' : 'Register'}
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.footerText}>
@@ -221,7 +330,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    paddingBottom: 60, // extra space below last button
+    paddingBottom: 60,
   },
   title: {
     fontSize: 24,
@@ -285,12 +394,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   warningText: {
-  color: '#d6a100',
-  fontSize: 13,
-  marginTop: 6,
-  paddingLeft: 10,
-},
-
+    color: '#d6a100',
+    fontSize: 13,
+    marginTop: 6,
+    paddingLeft: 10,
+  },
   footerText: {
     textAlign: 'center',
     marginTop: 20,
