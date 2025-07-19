@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useAccountStore } from '../stores/useAccountStore';
 import {
@@ -27,6 +28,8 @@ export const CreateAccountScreen = ({ navigation, route }) => {
   const [emailError, setEmailError] = useState('');
   const [passwordMatchError, setPasswordMatchError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verifyingPhone, setVerifyingPhone] = useState(false);
+
 
   const setAccount = useAccountStore((state) => state.setAccount);
 
@@ -62,51 +65,101 @@ export const CreateAccountScreen = ({ navigation, route }) => {
 
   const generateUserId = () => `user_${Math.random().toString(36).substr(2, 9)}`;
 
+  // const handleVerifyPhone = async () => {
+  //   if (phone.length !== 10) {
+  //     Alert.alert('Error', 'Enter a valid 10-digit phone number');
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await fetch(`${baseUrl}${SendOtpWhatsappEndpoint}`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ phone }),
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (!res.ok) {
+  //       Alert.alert('Failed', data.message || 'Failed to send OTP');
+  //       return;
+  //     }
+
+  //     setAccount({
+  //       name,
+  //       email,
+  //       phone,
+  //       password,
+  //       confirmPassword,
+  //       verifiedPhone: false,
+  //     });
+
+  //     navigation.navigate('Otp', {
+  //       contact: phone,
+  //       type: 'phone',
+  //       source: 'create',
+  //       name,
+  //       email,
+  //       password,
+  //       confirmPassword,
+  //     });
+  //   } catch (err) {
+  //     console.error('OTP send error:', err);
+  //     Alert.alert('Error', 'Network error while sending OTP');
+  //   }
+  // };
   const handleVerifyPhone = async () => {
-    if (phone.length !== 10) {
-      Alert.alert('Error', 'Enter a valid 10-digit phone number');
+  if (phone.length !== 10) {
+    Alert.alert('Error', 'Enter a valid 10-digit phone number');
+    return;
+  }
+
+  setVerifyingPhone(true); // ✅ Start loading
+
+  try {
+    const res = await fetch(`${baseUrl}${SendOtpWhatsappEndpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      Alert.alert('Failed', data.message || 'Failed to send OTP');
       return;
     }
 
-    try {
-      const res = await fetch(`${baseUrl}${SendOtpWhatsappEndpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone }),
-      });
+    setAccount({
+      name,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      verifiedPhone: false,
+    });
 
-      const data = await res.json();
+    navigation.navigate('Otp', {
+      contact: phone,
+      type: 'phone',
+      source: 'create',
+      name,
+      email,
+      password,
+      confirmPassword,
+    });
+  } catch (err) {
+    console.error('OTP send error:', err);
+    Alert.alert('Error', 'Network error while sending OTP');
+  } finally {
+    setVerifyingPhone(false); // ✅ Stop loading
+  }
+};
 
-      if (!res.ok) {
-        Alert.alert('Failed', data.message || 'Failed to send OTP');
-        return;
-      }
-
-      setAccount({
-        name,
-        email,
-        phone,
-        password,
-        confirmPassword,
-        verifiedPhone: false,
-      });
-
-      navigation.navigate('Otp', {
-        contact: phone,
-        type: 'phone',
-        source: 'create',
-        name,
-        email,
-        password,
-        confirmPassword,
-      });
-    } catch (err) {
-      console.error('OTP send error:', err);
-      Alert.alert('Error', 'Network error while sending OTP');
-    }
-  };
 
   const handleRegister = async () => {
     if (loading) return;
@@ -216,11 +269,22 @@ export const CreateAccountScreen = ({ navigation, route }) => {
               maxLength={10}
             />
             {phone.length === 10 && (
-              <TouchableOpacity onPress={handleVerifyPhone} disabled={verifiedPhone}>
-                <Text style={[styles.verifyText, verifiedPhone && styles.verified]}>
-                  {verifiedPhone ? 'Verified' : 'Verify'}
-                </Text>
-              </TouchableOpacity>
+              // <TouchableOpacity onPress={handleVerifyPhone} disabled={verifiedPhone}>
+              //   <Text style={[styles.verifyText, verifiedPhone && styles.verified]}>
+              //     {verifiedPhone ? 'Verified' : 'Verify'}
+              //   </Text>
+              // </TouchableOpacity>
+              <TouchableOpacity onPress={handleVerifyPhone} disabled={verifiedPhone || verifyingPhone}>
+  {verifyingPhone ? (
+    <ActivityIndicator size="small" color="#007bff" />
+  ) : (
+    <Text style={[styles.verifyText, verifiedPhone && styles.verified]}>
+      {verifiedPhone ? 'Verified' : 'Verify'}
+    </Text>
+  )}
+</TouchableOpacity>
+
+
             )}
           </View>
         </View>
@@ -264,9 +328,15 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           disabled={!isFormValid || loading}
           onPress={handleRegister}
         >
-          <Text style={styles.requestBtnText}>
-            {loading ? 'Registering...' : 'Register'}
-          </Text>
+          {loading ? (
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+    <Text style={styles.requestBtnText}>Registering...</Text>
+  </View>
+) : (
+  <Text style={styles.requestBtnText}>Register</Text>
+)}
+
         </TouchableOpacity>
 
         <Text style={styles.footerText}>

@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { styles } from './LoginScreen.styles';
 import {
@@ -21,6 +22,10 @@ export const LoginScreen = ({ navigation, route }) => {
   const [error, setError] = useState('');
   const [isValid, setIsValid] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
+
+
 
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
@@ -46,6 +51,8 @@ const handleVerify = async () => {
   const endpoint = activeTab === 'phone' ? SendOtpWhatsappEndpoint : SendOtpEndpoint;
 
   try {
+    setVerifying(true); // Start spinner
+
     const response = await fetch(`${baseUrl}${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -64,8 +71,12 @@ const handleVerify = async () => {
   } catch (error) {
     console.error('OTP send error:', error);
     setError('Network error while sending OTP');
+  } finally {
+    setVerifying(false); // Stop spinner
   }
 };
+
+
 
 
 
@@ -175,9 +186,15 @@ const handleVerify = async () => {
               <Text style={styles.verifyTextInline}>Verified</Text>
             ) : (
               isValid && (
-                <TouchableOpacity onPress={handleVerify}>
-                  <Text style={styles.verifyTextInline}>Verify</Text>
-                </TouchableOpacity>
+                <TouchableOpacity onPress={handleVerify} disabled={verifying}>
+  {verifying ? (
+    <ActivityIndicator size="small" color="#007bff" />
+  ) : (
+    <Text style={styles.verifyTextInline}>Verify</Text>
+  )}
+</TouchableOpacity>
+
+
               )
             )}
           </View>
@@ -186,12 +203,25 @@ const handleVerify = async () => {
       )}
 
       <TouchableOpacity
-        style={[styles.otpButton, (!isValid || !isVerified) && styles.otpButtonDisabled]}
-        onPress={() => console.log('Login Successful')}
-        disabled={!isValid || !isVerified}
-      >
-        <Text style={styles.otpButtonText}>Login</Text>
-      </TouchableOpacity>
+  style={[styles.otpButton, (!isValid || !isVerified || loggingIn) && styles.otpButtonDisabled]}
+  onPress={async () => {
+    setLoggingIn(true);
+    try {
+      console.log('Login Successful');
+      // Your login logic here
+    } finally {
+      setLoggingIn(false);
+    }
+  }}
+  disabled={!isValid || !isVerified || loggingIn}
+>
+  {loggingIn ? (
+    <ActivityIndicator size="small" color="#fff" />
+  ) : (
+    <Text style={styles.otpButtonText}>Login</Text>
+  )}
+</TouchableOpacity>
+
 
       <View style={styles.dividerContainer}>
         <View style={styles.divider} />
