@@ -1,31 +1,38 @@
 import React from 'react';
 import { View, Image, StyleSheet, StatusBar, Text, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 export const FirstPage = () => {
+  const navigation = useNavigation(); // Access navigation
+
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      
+
       <Image
-        source={require('../assets/images/image.png')} // Update path if needed
+        source={require('../assets/images/image.png')}
         style={styles.image}
         resizeMode="cover"
       />
 
       <View style={styles.overlayContainer}>
         <Text style={styles.quote}>Aswath Hollow Bricks and Lorry Service</Text>
-        
+
         <Text style={styles.tagline}>
           Delivering quality bricks and reliable transport services you can count on — built strong, built to last.
         </Text>
 
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('LoginScreen')} // 👈 Navigate to Login screen
+        >
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

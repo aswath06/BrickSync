@@ -110,9 +110,18 @@ export const DriverTruckView = ({ driverId }) => {
               <Text style={styles.damageText}>Damage</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.refuelBtn}>
-              <Text style={styles.refuelText}>⛽ Refuel</Text>
-            </TouchableOpacity>
+           <TouchableOpacity
+  style={styles.refuelBtn}
+  onPress={() =>
+    navigation.navigate('RefuelHistory', {
+      truckId: truck.id,
+      vehicleNumber: truck.number,
+    })
+  }
+>
+  <Text style={styles.refuelText}>⛽ Refuel</Text>
+</TouchableOpacity>
+
           </View>
         </View>
       </ScrollView>

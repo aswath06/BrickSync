@@ -1,4 +1,3 @@
-// store/useTruckStore.js
 import { create } from 'zustand';
 
 export const useTruckStore = create((set) => ({
@@ -29,7 +28,23 @@ export const useTruckStore = create((set) => ({
           date: '2025-07-12',
           status: 'Need to Change',
           file: { name: 'bumper_damage.png' },
-          changed: true, 
+          changed: true,
+        },
+      ],
+      refuelHistory: [
+        {
+          id: 'R001',
+          date: '2025-07-01',
+          amount: 5000,
+          volume: 50,
+          kilometer: 120000,
+        },
+        {
+          id: 'R002',
+          date: '2025-07-12',
+          amount: 3000,
+          volume: 30,
+          kilometer: 120550,
         },
       ],
     },
@@ -51,8 +66,10 @@ export const useTruckStore = create((set) => ({
           date: '2025-06-25',
           status: 'Normal',
           file: { name: 'rear_lights.pdf' },
+          changed: false,
         },
       ],
+      refuelHistory: [],
     },
     {
       id: 'T003',
@@ -66,9 +83,11 @@ export const useTruckStore = create((set) => ({
         Driverid: 'DR003',
       },
       damageHistory: [],
+      refuelHistory: [],
     },
   ],
 
+  // Add damage entry to specific truck
   addDamage: (vehicleNumber, damage) =>
     set((state) => ({
       trucks: state.trucks.map((truck) =>
@@ -76,6 +95,19 @@ export const useTruckStore = create((set) => ({
           ? {
               ...truck,
               damageHistory: [...(truck.damageHistory || []), damage],
+            }
+          : truck
+      ),
+    })),
+
+  // Add refuel entry to specific truck
+  addRefuel: (vehicleNumber, entry) =>
+    set((state) => ({
+      trucks: state.trucks.map((truck) =>
+        truck.number === vehicleNumber
+          ? {
+              ...truck,
+              refuelHistory: [...(truck.refuelHistory || []), entry],
             }
           : truck
       ),
