@@ -7,6 +7,12 @@ import {
   StatusBar,
 } from 'react-native';
 import { styles } from './LoginScreen.styles';
+import {
+  baseUrl,
+  SendOtpEndpoint,
+  SendOtpWhatsappEndpoint,
+} from '../../config'; // adjust path if needed
+
 
 export const LoginScreen = ({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState<'email' | 'phone'>('phone');
@@ -20,26 +26,48 @@ export const LoginScreen = ({ navigation, route }) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhone(filtered);
     if (!route?.params?.verified) setIsVerified(false);
-  };
+  }; 
+const handleVerify = async () => {
+  if (activeTab === 'phone' && phone.length !== 10) {
+    setError('Phone number must be 10 digits.');
+    return;
+  }
 
-  const handleVerify = () => {
-    if (activeTab === 'phone' && phone.length !== 10) {
-      setError('Phone number must be 10 digits.');
+  if (activeTab === 'email') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+  }
+
+  const contact = activeTab === 'phone' ? phone : email;
+  const field = activeTab === 'phone' ? 'phone' : 'email';
+  const endpoint = activeTab === 'phone' ? SendOtpWhatsappEndpoint : SendOtpEndpoint;
+
+  try {
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: contact }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.message || 'Failed to send OTP');
       return;
     }
 
-    if (activeTab === 'email') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError('Enter a valid email address.');
-        return;
-      }
-    }
-
     setError('');
-    const contact = activeTab === 'phone' ? phone : email;
     navigation.navigate('Otp', { contact, type: activeTab, source: 'login' });
-  };
+  } catch (error) {
+    console.error('OTP send error:', error);
+    setError('Network error while sending OTP');
+  }
+};
+
+
 
   useEffect(() => {
     if (route?.params?.verified) {

@@ -12,7 +12,7 @@ import {
 import { useAccountStore } from '../stores/useAccountStore';
 import {
   baseUrl,
-  SendOtpWhatsappEndpoint, // ✅ use WhatsApp-specific OTP endpoint
+  SendOtpWhatsappEndpoint,
   VerifyOtpEndpoint,
   RegisterEndpoint,
 } from '../../config';
@@ -60,6 +60,8 @@ export const CreateAccountScreen = ({ navigation, route }) => {
     verifiedPhone &&
     isValidEmail(email);
 
+  const generateUserId = () => `user_${Math.random().toString(36).substr(2, 9)}`;
+
   const handleVerifyPhone = async () => {
     if (phone.length !== 10) {
       Alert.alert('Error', 'Enter a valid 10-digit phone number');
@@ -72,7 +74,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone }), // ✅ Only phone for WhatsApp
+        body: JSON.stringify({ phone }),
       });
 
       const data = await res.json();
@@ -106,108 +108,59 @@ export const CreateAccountScreen = ({ navigation, route }) => {
     }
   };
 
-//   const handleRegister = async () => {
-//   if (loading) return;
-//   setLoading(true);
+  const handleRegister = async () => {
+    if (loading) return;
+    setLoading(true);
 
-//   const userid = generateUserId();
+    const userid = generateUserId();
 
-//   setAccount({
-//     name,
-//     email,
-//     phone,
-//     password,
-//     confirmPassword,
-//     verifiedPhone,
-//   });
-
-//   try {
-//     const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({
-//         name,
-//         email,
-//         phone,
-//         password,
-//         userid,       // ✅ Add this
-//         userrole: 3,  // ✅ Add this
-//       }),
-//     });
-
-//     const data = await response.json();
-
-//     if (!response.ok) {
-//       Alert.alert('Registration Failed', data.message || 'Something went wrong');
-//       return;
-//     }
-
-//     Alert.alert('Success', 'Account registered successfully!');
-//     navigation.navigate('LoginScreen');
-//   } catch (error) {
-//     console.error('Registration error:', error);
-//     Alert.alert('Error', 'Could not register at this time.');
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-const handleRegister = async () => {
-  if (loading) return;
-  setLoading(true);
-
-  const userid = generateUserId();
-
-  setAccount({
-    name,
-    email,
-    phone,
-    password,
-    confirmPassword,
-    verifiedPhone,
-  });
-
-  const payload = {
-    name,
-    email,
-    phone,
-    password,
-    userid,
-    userrole: 3,
-  };
-
-  console.log('🔍 Sending registration payload:', payload);
-
-  try {
-    const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    setAccount({
+      name,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      verifiedPhone,
     });
 
-    const data = await response.json();
+    const payload = {
+      name,
+      email,
+      phone,
+      password,
+      userid,
+      userrole: 3,
+    };
 
-    console.log('📩 Registration response:', response.status, data);
+    console.log('🔍 Sending registration payload:', payload);
 
-    if (!response.ok) {
-      Alert.alert('Registration Failed', data.message || 'Something went wrong');
-      return;
+    try {
+      const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      console.log('📩 Registration response:', response.status, data);
+
+      if (!response.ok) {
+        Alert.alert('Registration Failed', data.message || 'Something went wrong');
+        return;
+      }
+
+      Alert.alert('Success', 'Account registered successfully!');
+      navigation.navigate('LoginScreen');
+    } catch (error) {
+      console.error('❌ Registration error:', error);
+      Alert.alert('Error', 'Could not register at this time.');
+    } finally {
+      setLoading(false);
     }
-
-    Alert.alert('Success', 'Account registered successfully!');
-    navigation.navigate('LoginScreen');
-  } catch (error) {
-    console.error('❌ Registration error:', error);
-    Alert.alert('Error', 'Could not register at this time.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
