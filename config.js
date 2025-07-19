@@ -1,4 +1,5 @@
-export const IP = '10.10.70.247';
+export const IP = '172.20.10.3';
+//  http://172.20.10.3:3000
 export const PORT = 3000;
 export const baseUrl = `http://${IP}:${PORT}`;
 export const verifyUrl = baseUrl;

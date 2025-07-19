@@ -6,7 +6,6 @@ import {
 import { ArrowBack, EditIcon } from '../assets';
 import { verifyUrl, VerifyOtpEndpoint } from '../../config';
 
-
 const { width } = Dimensions.get('window');
 
 export const OtpScreen = ({ navigation, route }) => {
@@ -26,69 +25,53 @@ export const OtpScreen = ({ navigation, route }) => {
 
   const goBackToSource = (isVerified = false) => {
     const target = source === 'create' ? 'CreateAccountScreen' : 'LoginScreen';
-    const navParams = isVerified
-      ? {
-          verified: true,
-          contact,
-          type,
-        }
-      : {
-          contact,
-          type,
-        };
-
-    navigation.navigate(target, navParams);
-  };
-
-  // const handleSubmit = () => {
-  //   const enteredOtp = otp.join('');
-  //   if (enteredOtp === '8812') {
-  //     goBackToSource(true);
-  //   } else {
-  //     Alert.alert('Invalid OTP', 'The entered OTP is incorrect.');
-  //   }
-  // };
-  const handleSubmit = async () => {
-  const enteredOtp = otp.join('');
-  if (enteredOtp.length !== 4) {
-    Alert.alert('Error', 'Please enter the complete 4-digit OTP.');
-    return;
-  }
-
-  const payload = {
-    [type === 'phone' ? 'phone' : 'email']: contact,
-    otp: enteredOtp,
-  };
-
-  console.log('Sending OTP verification data:', payload);
-
-  try {
-    const response = await fetch(`${verifyUrl}${VerifyOtpEndpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    navigation.navigate(target, {
+      contact,
+      type,
+      ...(isVerified && { verified: true }),
     });
+  };
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      Alert.alert('Invalid OTP', data.message || 'The entered OTP is incorrect.');
+  const handleSubmit = async () => {
+    const enteredOtp = otp.join('');
+    if (enteredOtp.length !== 4) {
+      Alert.alert('Error', 'Please enter the complete 4‑digit OTP.');
       return;
     }
 
-    goBackToSource(true);
-  } catch (error) {
-    console.error('OTP verification error:', error);
-    Alert.alert('Error', 'Verification failed due to network error');
-  }
-};
+    try {
+      const response = await fetch(`${verifyUrl}${VerifyOtpEndpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [type === 'phone' ? 'phone' : 'email']: contact,
+          otp: enteredOtp,
+        }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert('Invalid OTP', data.message || 'The entered OTP is incorrect.');
+        return;
+      }
+      goBackToSource(true);
+    } catch (err) {
+      console.error('OTP verification error:', err);
+      Alert.alert('Error', 'Verification failed due to network error');
+    }
+  };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => goBackToSource(false)} style={styles.backIcon}>
             <ArrowBack width={24} height={24} fill="black" />
@@ -96,10 +79,17 @@ export const OtpScreen = ({ navigation, route }) => {
           <Text style={styles.title}>OTP</Text>
         </View>
 
-        <Image source={require('../assets/images/otp_illustration.png')} style={styles.image} />
+        {/* illustration */}
+        <Image
+          source={require('../assets/images/otp_illustration.png')}
+          style={styles.image}
+        />
+
+        {/* texts */}
         <Text style={styles.header}>Verification code</Text>
         <Text style={styles.subheader}>We have sent an OTP code to your {type}</Text>
 
+        {/* phone / mail chip */}
         <TouchableOpacity style={styles.phoneContainer} onPress={() => goBackToSource(false)}>
           <Text style={styles.phone}>{displayText}</Text>
           <View style={styles.editCircle}>
@@ -107,26 +97,26 @@ export const OtpScreen = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
 
+        {/* OTP inputs */}
         <View style={styles.otpContainer}>
-          {otp.map((digit, index) => (
+          {otp.map((d, i) => (
             <TextInput
-              key={index}
+              key={i}
               style={styles.otpInput}
               keyboardType="number-pad"
               maxLength={1}
-              value={digit}
-              onChangeText={(text) => handleChange(text, index)}
-              ref={(ref) => (inputRefs.current[index] = ref)}
+              value={d}
+              ref={(r) => (inputRefs.current[i] = r)}
+              onChangeText={(t) => handleChange(t, i)}
               textAlign="center"
             />
           ))}
         </View>
 
-        <View style={styles.submitWrapper}>
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-            <Text style={styles.submitText}>Submit</Text>
-          </TouchableOpacity>
-        </View>
+        {/* submit button */}
+        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+          <Text style={styles.submitText}>Submit</Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -134,47 +124,23 @@ export const OtpScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 60,
+    paddingBottom: 34,      // <-- extra bottom padding for scroll
     backgroundColor: '#fff',
     alignItems: 'center',
-    flexGrow: 1,
   },
   headerContainer: {
     width: '100%',
-    position: 'relative',
     justifyContent: 'center',
     marginBottom: 16,
   },
-  backIcon: {
-    position: 'absolute',
-    left: 0,
-  },
-  title: {
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '500',
-    color: 'gray',
-  },
-  image: {
-    width: 220,
-    height: 220,
-    resizeMode: 'contain',
-    marginVertical: 48,
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subheader: {
-    fontSize: 14,
-    color: 'gray',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
+  backIcon: { position: 'absolute', left: 0 },
+  title: { textAlign: 'center', fontSize: 20, fontWeight: '500', color: 'gray' },
+  image: { width: 220, height: 220, resizeMode: 'contain', marginVertical: 48 },
+  header: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 8, textAlign: 'center' },
+  subheader: { fontSize: 14, color: 'gray', textAlign: 'center', marginBottom: 40 },
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -184,52 +150,22 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginBottom: 60,
   },
-  phone: {
-    fontSize: 15,
-    color: '#fff',
-    marginRight: 8,
-  },
-  editCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#f44',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '80%',
-    marginBottom: 40,
-  },
+  phone: { fontSize: 15, color: '#fff', marginRight: 8 },
+  editCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#f44', justifyContent: 'center', alignItems: 'center' },
+  otpContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '80%', marginBottom: 40 },
   otpInput: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#f6f6f6',
-    elevation: 2,
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#000',
-  },
-  submitWrapper: {
-    position: 'absolute',
-    bottom: 34,
-    width: '100%',
-    alignItems: 'center',
+    width: 60, height: 60, borderRadius: 30, backgroundColor: '#f6f6f6', elevation: 2,
+    fontSize: 20, fontWeight: '500', color: '#000',
   },
   submitBtn: {
     backgroundColor: '#0a7cf3',
-    width: 389,
+    width: '85%',              // responsive width
+    maxWidth: 389,
     height: 56,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'center',
   },
-  submitText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
