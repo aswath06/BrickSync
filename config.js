@@ -13,7 +13,6 @@ export const DeleteVehicleEndpoint = id => `/api/vehicles/${id}`;
 export const AddServiceToVehicleEndpoint = id => `/api/vehicles/${id}/service`;
 export const AddRefuelToVehicleEndpoint = id => `/api/vehicles/${id}/refuel`;
 export const GetVehiclesByDriverIdEndpoint = id => `/api/vehicles/by-driver/${id}`;
-// Get user by custom userid
 export const GetUserByUserIdEndpoint = userid => `/api/users/by-userid/${userid}`;
 
 
@@ -22,9 +21,3 @@ export const SendOtpEndpoint = '/api/users/send-otp';
 export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp';
 export const VerifyOtpEndpoint = '/api/users/verify-otp';
 export const RegisterEndpoint = '/api/users';
-// export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp';
-// export const SendOtpEndpoint = '/api/users/send-otp';
-// export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp'; // ✅ WhatsApp OTP
-// export const VerifyOtpEndpoint = '/api/users/verify-otp';
-// export const RegisterEndpoint = '/api/users';
-// http://172.20.10.3:3000

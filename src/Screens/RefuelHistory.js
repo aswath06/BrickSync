@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  ScrollView,
   StatusBar,
   Image,
 } from 'react-native';
@@ -15,6 +14,8 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTruckStore } from '../stores/useTruckStore';
 import { ArrowBack } from '../assets';
+import { AddRefuelToVehicleEndpoint, baseUrl } from '../../config';
+import axios from 'axios';
 
 export const RefuelHistory = () => {
   const navigation = useNavigation();
@@ -23,7 +24,9 @@ export const RefuelHistory = () => {
 
   const { trucks, addRefuel } = useTruckStore();
   const truck = trucks.find((t) => t.number === vehicleNumber);
-  const history = truck?.refuelHistory || [];
+  const history = [...(truck?.refuelHistory || [])].sort(
+    (a, b) => new Date(b.date) - new Date(a.date)
+  );
 
   const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
@@ -32,35 +35,68 @@ export const RefuelHistory = () => {
   const [date, setDate] = useState(new Date());
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
 
-  const handleAddRefuel = () => {
+  const handleAddRefuel = async () => {
     const newEntry = {
-      id: Date.now().toString(),
       amount: parseFloat(amount),
       volume: parseFloat(volume),
-      kilometer: parseFloat(kilometer),
-      date: date.toDateString(),
+      lastKm: parseFloat(kilometer),
+      date: date.toISOString(),
     };
-    addRefuel(vehicleNumber, newEntry);
-    setAmount('');
-    setVolume('');
-    setKilometer('');
-    setDate(new Date());
-    setModalVisible(false);
+
+    try {
+      await axios.post(
+        `${baseUrl}${AddRefuelToVehicleEndpoint(truck.id)}`,
+        newEntry
+      );
+
+      const previousEntry = history.length > 0 ? history[0] : null;
+      const distance = previousEntry ? newEntry.lastKm - previousEntry.kilometer : 0;
+      const mileage = newEntry.volume > 0 && distance > 0 ? distance / newEntry.volume : null;
+
+      const localEntry = {
+        id: Date.now().toString(),
+        ...newEntry,
+        kilometer: newEntry.lastKm,
+        mileage,
+      };
+
+      addRefuel(vehicleNumber, localEntry);
+
+      setAmount('');
+      setVolume('');
+      setKilometer('');
+      setDate(new Date());
+      setModalVisible(false);
+    } catch (error) {
+      console.error('❌ Failed to add refuel entry:', error);
+      alert('Failed to submit refuel. Try again.');
+    }
   };
 
   const calculateAverageMileage = () => {
-    if (history.length < 2) return '-';
-    const sorted = [...history].sort((a, b) => a.kilometer - b.kilometer);
-    const distance = sorted[sorted.length - 1].kilometer - sorted[0].kilometer;
-    const totalVolume = sorted.reduce((sum, r) => sum + r.volume, 0);
-    return `${(distance / totalVolume).toFixed(2)} km/l`;
+  if (history.length < 2) return '-';
+
+  const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const totalDistance = sorted[sorted.length - 1].kilometer - sorted[0].kilometer;
+  const totalVolume = sorted.reduce((sum, r) => sum + (r.volume || 0), 0);
+
+  if (totalVolume === 0) return '-';
+
+  return `${(totalDistance / totalVolume).toFixed(2)} km/l`;
+};
+
+
+
+  const formatDate = (isoDate) => {
+    const date = new Date(isoDate);
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    return date.toLocaleDateString('en-GB', options);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
@@ -69,45 +105,39 @@ export const RefuelHistory = () => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-        {/* GIF */}
-        <Image
-          source={require('../assets/refuel.gif')}
-          style={styles.refuelGif}
-          resizeMode="contain"
-        />
-
-        {/* Vehicle and mileage */}
-        <Text style={styles.vehicleNumber}>{vehicleNumber}</Text>
-        <Text style={styles.mileageText}>
-          Avg. Mileage: {calculateAverageMileage()}
-        </Text>
-
-        {history.length === 0 ? (
-          <Text style={{ color: '#888' }}>No refuel records yet.</Text>
-        ) : (
-          <FlatList
-            data={history}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Text style={styles.text}>Date: {item.date}</Text>
-                <Text style={styles.text}>Amount: ₹{item.amount}</Text>
-                <Text style={styles.text}>Volume: {item.volume} L</Text>
-                <Text style={styles.text}>Kilometers: {item.kilometer} km</Text>
-              </View>
+      <FlatList
+        data={history}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <View style={{ padding: 16 }}>
+            <Image
+              source={require('../assets/refuel.gif')}
+              style={styles.refuelGif}
+              resizeMode="contain"
+            />
+            <Text style={styles.vehicleNumber}>{vehicleNumber}</Text>
+            <Text style={styles.mileageText}>Avg. Mileage: {calculateAverageMileage()}</Text>
+            {history.length === 0 && (
+              <Text style={{ color: '#888', marginTop: 8 }}>No refuel records yet.</Text>
             )}
-          />
+          </View>
+        }
+        contentContainerStyle={{ paddingBottom: 120 }}
+        renderItem={({ item }) => (
+          <View style={[styles.card, { marginHorizontal: 16 }]}>
+            <Text style={styles.text}>Date: {formatDate(item.date)}</Text>
+            <Text style={styles.text}>Amount: ₹{item.amount}</Text>
+            <Text style={styles.text}>Volume: {item.volume} L</Text>
+            <Text style={styles.text}>Kilometers: {item.kilometer} km</Text>
+            <Text style={styles.text}>Mileage: {item.mileage?.toFixed(2) ?? '-'} km/l</Text>
+          </View>
         )}
-      </ScrollView>
+      />
 
-      {/* Floating Button */}
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <Text style={styles.fabText}>＋</Text>
       </TouchableOpacity>
 
-      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -164,7 +194,6 @@ export const RefuelHistory = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -179,20 +208,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
   },
-
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     fontFamily: 'AbeeZee-Regular',
     color: '#000',
   },
-
   refuelGif: {
     width: '100%',
     height: 180,
     marginBottom: 16,
   },
-
   vehicleNumber: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -201,7 +227,6 @@ const styles = StyleSheet.create({
     fontFamily: 'AbeeZee-Regular',
     marginBottom: 4,
   },
-
   mileageText: {
     fontSize: 18,
     fontWeight: '600',
@@ -209,20 +234,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-
   card: {
     backgroundColor: '#F2F2F2',
     padding: 12,
     borderRadius: 10,
     marginBottom: 10,
   },
-
   text: {
     fontSize: 14,
     color: '#333',
     marginBottom: 2,
   },
-
   fab: {
     position: 'absolute',
     bottom: 30,
@@ -235,33 +257,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 6,
   },
-
   fabText: {
     color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
   },
-
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
-
   modalContent: {
     backgroundColor: '#fff',
     padding: 20,
     borderTopRightRadius: 20,
     borderTopLeftRadius: 20,
   },
-
   modalTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
     color: '#000',
   },
-
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -270,7 +287,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 14,
   },
-
   uploadBtn: {
     padding: 10,
     backgroundColor: '#eee',
@@ -278,7 +294,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: 'center',
   },
-
   addBtn: {
     backgroundColor: '#1577EA',
     paddingVertical: 12,
@@ -286,7 +301,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     alignItems: 'center',
   },
-
   addBtnText: {
     color: '#fff',
     fontWeight: 'bold',

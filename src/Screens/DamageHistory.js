@@ -9,12 +9,15 @@ import {
   TextInput,
   ScrollView,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useTruckStore } from '../stores/useTruckStore';
 import { ArrowBack } from '../assets';
+import axios from 'axios';
+import { baseUrl, AddServiceToVehicleEndpoint } from '../../config';
 
 export const DamageHistory = ({ route }) => {
   const navigation = useNavigation();
@@ -30,6 +33,7 @@ export const DamageHistory = ({ route }) => {
   const [status, setStatus] = useState('Normal');
   const [file, setFile] = useState(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const statuses = ['Can Drive', 'Normal', 'Need to Change'];
 
@@ -46,21 +50,51 @@ export const DamageHistory = ({ route }) => {
     }
   };
 
-  const handleAddDamage = () => {
-    const newEntry = {
-      id: Date.now().toString(),
-      text: damageText,
-      date: selectedDate.toDateString(),
-      status,
-      file,
-      changed: false, // default
-    };
-    addDamage(vehicleNumber, newEntry);
-    setModalVisible(false);
-    setDamageText('');
-    setFile(null);
-    setStatus('Normal');
-    setSelectedDate(new Date());
+  const handleAddDamage = async () => {
+    try {
+      const vehicleId = truck?.id;
+      if (!vehicleId) throw new Error('Truck ID not found');
+
+      const payload = {
+        title: damageText || 'No Title',
+        fileUrl: file?.uri || '', // replace with real URL if uploading to cloud
+        date: selectedDate.toISOString().split('T')[0],
+        status,
+      };
+
+      // Add locally for display
+      addDamage(vehicleNumber, {
+        id: Date.now().toString(),
+        ...payload,
+        file,
+        changed: false,
+      });
+
+      // Submit to backend
+      await axios.post(`${baseUrl}${AddServiceToVehicleEndpoint(vehicleId)}`, payload);
+
+      console.log('✅ Damage report submitted');
+
+    } catch (err) {
+      console.error('❌ Failed to submit damage report:', err?.response?.data || err.message);
+    } finally {
+      setModalVisible(false);
+      setDamageText('');
+      setFile(null);
+      setStatus('Normal');
+      setSelectedDate(new Date());
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await useTruckStore.getState().fetchAllTrucks();
+    } catch (err) {
+      console.warn('Refresh error:', err);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -79,8 +113,6 @@ export const DamageHistory = ({ route }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
@@ -89,8 +121,12 @@ export const DamageHistory = ({ route }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Body */}
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         <View style={{ padding: 16 }}>
           <Text style={styles.subTitle}>Vehicle: {vehicleNumber}</Text>
 
@@ -103,16 +139,14 @@ export const DamageHistory = ({ route }) => {
               renderItem={({ item }) => (
                 <View style={styles.card}>
                   <View style={styles.cardHeader}>
-                    <Text style={styles.text}>{item.text}</Text>
+                    <Text style={styles.text}>{item.title || item.text}</Text>
                     {item.changed && <Text style={styles.changedBadge}>Changed</Text>}
                   </View>
                   <Text style={styles.subText}>Date: {item.date}</Text>
                   <Text style={[styles.subText, { color: getStatusColor(item.status) }]}>
                     Status: {item.status}
                   </Text>
-                  {item.file && (
-                    <Text style={styles.fileText}>📎 {item.file.name}</Text>
-                  )}
+                  {item.file && <Text style={styles.fileText}>📎 {item.file.name}</Text>}
                 </View>
               )}
               scrollEnabled={false}
@@ -121,12 +155,10 @@ export const DamageHistory = ({ route }) => {
         </View>
       </ScrollView>
 
-      {/* Floating Button */}
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
         <Text style={styles.fabText}>＋</Text>
       </TouchableOpacity>
 
-      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -167,9 +199,7 @@ export const DamageHistory = ({ route }) => {
                   style={[styles.chip, status === s && styles.activeChip]}
                   onPress={() => setStatus(s)}
                 >
-                  <Text
-                    style={status === s ? styles.activeChipText : styles.chipText}
-                  >
+                  <Text style={status === s ? styles.activeChipText : styles.chipText}>
                     {s}
                   </Text>
                 </TouchableOpacity>
@@ -186,6 +216,7 @@ export const DamageHistory = ({ route }) => {
   );
 };
 
+// Your styles remain the same
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {

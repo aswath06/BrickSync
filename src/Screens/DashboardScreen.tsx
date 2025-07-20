@@ -31,11 +31,11 @@ export const DashboardScreen = () => {
         <>
           <View style={styles.section}>
             <MainCard 
-              name="Aswath M" 
+              name={user?.name || 'Guest'}
               company="Aswath Hollow Bricks and Lorry Services"
               balance="₹12,500"
               advance="₹5,000"
-              driverId="DRV1234"
+              driverId={user?.userid || 'null'}
               width={380}
               height={170}
             />

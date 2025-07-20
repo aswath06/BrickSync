@@ -24,7 +24,24 @@ export const useTruckStore = create((set) => ({
           permit: truck.permit,
           driver: truck.driverName,
           Driverid: truck.driverId,
+          TotalKm: truck.totalKm,
         },
+        damageHistory: (truck.Services || []).map((service) => ({
+          id: `S${service.id}`,
+          text: service.title,
+          date: service.date?.split('T')[0],
+          status: service.status,
+          file: { name: service.fileUrl?.split('/').pop() },
+          changed: service.status === 'Need to Change',
+        })),
+        refuelHistory: (truck.Refuels || []).map((r) => ({
+          id: `R${r.id}`,
+          date: r.createdAt?.split('T')[0],
+          amount: r.amount,
+          volume: r.volume,
+          kilometer: r.lastKm,
+          mileage: r.mileage,
+        })),
       }));
       set({ trucks });
     } catch (error) {
@@ -49,10 +66,51 @@ export const useTruckStore = create((set) => ({
           Driverid: truck.driverId,
           TotalKm: truck.totalKm,
         },
+        damageHistory: (truck.Services || []).map((service) => ({
+          id: `S${service.id}`,
+          text: service.title,
+          date: service.date?.split('T')[0],
+          status: service.status,
+          file: { name: service.fileUrl?.split('/').pop() },
+          changed: service.status === 'Need to Change',
+        })),
+        refuelHistory: (truck.Refuels || []).map((r) => ({
+          id: `R${r.id}`,
+          date: r.createdAt?.split('T')[0],
+          amount: r.amount,
+          volume: r.volume,
+          kilometer: r.lastKm,
+          mileage: r.mileage,
+        })),
       }));
       set({ trucks });
     } catch (error) {
       console.error('❌ Error fetching all trucks:', error?.response?.data || error.message);
     }
+  },
+
+  addDamage: (vehicleNumber, damageEntry) => {
+    set((state) => ({
+      trucks: state.trucks.map((truck) =>
+        truck.number === vehicleNumber
+          ? {
+              ...truck,
+              damageHistory: [...(truck.damageHistory || []), damageEntry],
+            }
+          : truck
+      ),
+    }));
+  },
+  addRefuel: (vehicleNumber, refuelEntry) => {
+    set((state) => ({
+      trucks: state.trucks.map((truck) =>
+        truck.number === vehicleNumber
+          ? {
+              ...truck,
+              refuelHistory: [...(truck.refuelHistory || []), refuelEntry],
+            }
+          : truck
+      ),
+    }));
   },
 }));
