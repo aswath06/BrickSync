@@ -4,8 +4,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 type MainCardProps = {
   name: string;
   company: string;
-  balance: string;
-  advance: string;
+  balance: number;
+  advance: number;
   driverId: string;
   width?: number | string;
   height?: number | string;

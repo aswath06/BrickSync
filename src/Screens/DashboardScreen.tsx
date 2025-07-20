@@ -11,7 +11,7 @@ const jobData = [
   { id: '2', slNo: '2', customer: 'Airport', ord: '10 min', status: 'Delayed' },
   { id: '3', slNo: '3', customer: 'University', ord: '20 min', status: 'Assign' },
   { id: '4', slNo: '4', customer: 'Shopping Mall', ord: '25 min', status: 'Canceled' },
-];
+];99
 
 export const DashboardScreen = () => {
   const user = useUserStore((state) => state.user);
@@ -33,8 +33,8 @@ export const DashboardScreen = () => {
             <MainCard 
               name={user?.name || 'Guest'}
               company="Aswath Hollow Bricks and Lorry Services"
-              balance="₹12,500"
-              advance="₹5,000"
+              balance={user?.balance}
+              advance={user?.advance}
               driverId={user?.userid || 'null'}
               width={380}
               height={170}

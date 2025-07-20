@@ -4,18 +4,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { storeToken } from '../services/authStorage'; // adjust path as needed
+import { storeToken } from '../services/authStorage';
 import { styles } from './LoginScreen.styles';
 import {
   baseUrl,
   SendOtpEndpoint,
   SendOtpWhatsappEndpoint,
 } from '../../config';
-import { useUserStore } from '../stores/useUserStore'; // adjust path if needed
-
+import { useUserStore } from '../stores/useUserStore';
 
 export const LoginScreen = ({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState<'email' | 'phone'>('phone');
@@ -27,7 +25,6 @@ export const LoginScreen = ({ navigation, route }) => {
   const [verifying, setVerifying] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const setUser = useUserStore((state) => state.setUser);
-
 
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
@@ -55,7 +52,6 @@ export const LoginScreen = ({ navigation, route }) => {
 
     try {
       setVerifying(true);
-
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,49 +76,42 @@ export const LoginScreen = ({ navigation, route }) => {
   };
 
   const getUserAndToken = async () => {
-  const contact = activeTab === 'phone' ? phone : email;
-  const queryParam = activeTab === 'phone' ? `phone=${contact}` : `email=${contact}`;
-  const endpoint = `${baseUrl}/api/users/by-${activeTab}?${queryParam}`;
+    const contact = activeTab === 'phone' ? phone : email;
+    const queryParam = activeTab === 'phone' ? `phone=${contact}` : `email=${contact}`;
+    const endpoint = `${baseUrl}/api/users/by-${activeTab}?${queryParam}`;
 
-  try {
-    const res = await fetch(endpoint);
-    const data = await res.json();
+    try {
+      const res = await fetch(endpoint);
+      const data = await res.json();
 
-    if (!res.ok || !data.exists) {
-      setError('User not found');
+      if (!res.ok || !data.exists) {
+        setError('User not found');
+        return null;
+      }
+
+      const { token, user } = data;
+      await storeToken(token);
+      console.log('✅ JWT Token:', token);
+      console.log('✅ Full User:', user); // ← Full user object
+      return { token, user };
+    } catch (err) {
+      console.error('User fetch error:', err);
+      setError('Failed to fetch user details');
       return null;
     }
-
-    const { token, user } = data;
-    await storeToken(token);
-    console.log('✅ JWT Token:', token);
-    console.log('✅ User:', user);
-
-    return { token, user };
-  } catch (err) {
-    console.error('User fetch error:', err);
-    setError('Failed to fetch user details');
-    return null;
-  }
-};
-
+  };
 
   useEffect(() => {
     if (route?.params?.verified) {
       setIsVerified(true);
-      if (route.params?.type === 'phone') {
-        setActiveTab('phone');
-        setPhone(route.params.contact || '');
-      } else if (route.params?.type === 'email') {
-        setActiveTab('email');
-        setEmail(route.params.contact || '');
-      }
+      const { type, contact } = route.params;
+      setActiveTab(type);
+      if (type === 'phone') setPhone(contact || '');
+      else if (type === 'email') setEmail(contact || '');
     } else {
-      if (route?.params?.type === 'phone') {
-        setPhone(route.params?.contact || '');
-      } else if (route?.params?.type === 'email') {
-        setEmail(route.params?.contact || '');
-      }
+      const { type, contact } = route.params || {};
+      if (type === 'phone') setPhone(contact || '');
+      else if (type === 'email') setEmail(contact || '');
     }
   }, [route?.params]);
 
@@ -236,9 +225,8 @@ export const LoginScreen = ({ navigation, route }) => {
           try {
             const result = await getUserAndToken();
             if (result) {
-              setUser(result.user);
+              setUser(result.user); // ✅ full user stored in Zustand
               console.log('Login Successful');
-              // Navigate after login if needed:
               navigation.navigate('DashboardScreen');
             }
           } finally {
