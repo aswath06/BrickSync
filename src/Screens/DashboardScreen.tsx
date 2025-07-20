@@ -2,6 +2,8 @@ import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { JobCard, MainCard, PendingJobsTable, UserHeaderCard } from '../Component';
 import { DashboardInfoCard } from '../Component/DashboardInfoCard';
+import { TwoPersonIcon } from '../assets';
+import { useUserStore } from '../stores/useUserStore';
 
 const userRole = 1;
 
@@ -13,10 +15,11 @@ const jobData = [
 ];
 
 export const DashboardScreen = () => {
+  const user = useUserStore((state) => state.user);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <UserHeaderCard
-        name="Michael"
+        name={user?.name || 'Guest'}
         imageUrl="https://images.unsplash.com/photo-1507537297725-24a1c029d3ca"
         width={380}
         height={64}
@@ -59,6 +62,7 @@ export const DashboardScreen = () => {
             <DashboardInfoCard
               height={120}
               icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' }}
+              // icon={<TwoPersonIcon/>}
               title="Completed Jobs"
               value={234}
             />

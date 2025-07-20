@@ -7,12 +7,14 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import { storeToken } from '../services/authStorage'; // adjust path as needed
 import { styles } from './LoginScreen.styles';
 import {
   baseUrl,
   SendOtpEndpoint,
   SendOtpWhatsappEndpoint,
-} from '../../config'; // adjust path if needed
+} from '../../config';
+import { useUserStore } from '../stores/useUserStore'; // adjust path if needed
 
 
 export const LoginScreen = ({ navigation, route }) => {
@@ -24,66 +26,90 @@ export const LoginScreen = ({ navigation, route }) => {
   const [isVerified, setIsVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
-
+  const setUser = useUserStore((state) => state.setUser);
 
 
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhone(filtered);
     if (!route?.params?.verified) setIsVerified(false);
-  }; 
-const handleVerify = async () => {
-  if (activeTab === 'phone' && phone.length !== 10) {
-    setError('Phone number must be 10 digits.');
-    return;
-  }
+  };
 
-  if (activeTab === 'email') {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Enter a valid email address.');
+  const handleVerify = async () => {
+    if (activeTab === 'phone' && phone.length !== 10) {
+      setError('Phone number must be 10 digits.');
       return;
     }
-  }
 
+    if (activeTab === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError('Enter a valid email address.');
+        return;
+      }
+    }
+
+    const contact = activeTab === 'phone' ? phone : email;
+    const field = activeTab === 'phone' ? 'phone' : 'email';
+    const endpoint = activeTab === 'phone' ? SendOtpWhatsappEndpoint : SendOtpEndpoint;
+
+    try {
+      setVerifying(true);
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: contact }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Failed to send OTP');
+        return;
+      }
+
+      setError('');
+      navigation.navigate('Otp', { contact, type: activeTab, source: 'login' });
+    } catch (error) {
+      console.error('OTP send error:', error);
+      setError('Network error while sending OTP');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const getUserAndToken = async () => {
   const contact = activeTab === 'phone' ? phone : email;
-  const field = activeTab === 'phone' ? 'phone' : 'email';
-  const endpoint = activeTab === 'phone' ? SendOtpWhatsappEndpoint : SendOtpEndpoint;
+  const queryParam = activeTab === 'phone' ? `phone=${contact}` : `email=${contact}`;
+  const endpoint = `${baseUrl}/api/users/by-${activeTab}?${queryParam}`;
 
   try {
-    setVerifying(true); // Start spinner
+    const res = await fetch(endpoint);
+    const data = await res.json();
 
-    const response = await fetch(`${baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: contact }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      setError(data.message || 'Failed to send OTP');
-      return;
+    if (!res.ok || !data.exists) {
+      setError('User not found');
+      return null;
     }
 
-    setError('');
-    navigation.navigate('Otp', { contact, type: activeTab, source: 'login' });
-  } catch (error) {
-    console.error('OTP send error:', error);
-    setError('Network error while sending OTP');
-  } finally {
-    setVerifying(false); // Stop spinner
+    const { token, user } = data;
+    await storeToken(token);
+    console.log('✅ JWT Token:', token);
+    console.log('✅ User:', user);
+
+    return { token, user };
+  } catch (err) {
+    console.error('User fetch error:', err);
+    setError('Failed to fetch user details');
+    return null;
   }
 };
-
-
-
 
 
   useEffect(() => {
     if (route?.params?.verified) {
       setIsVerified(true);
-
       if (route.params?.type === 'phone') {
         setActiveTab('phone');
         setPhone(route.params.contact || '');
@@ -187,14 +213,12 @@ const handleVerify = async () => {
             ) : (
               isValid && (
                 <TouchableOpacity onPress={handleVerify} disabled={verifying}>
-  {verifying ? (
-    <ActivityIndicator size="small" color="#007bff" />
-  ) : (
-    <Text style={styles.verifyTextInline}>Verify</Text>
-  )}
-</TouchableOpacity>
-
-
+                  {verifying ? (
+                    <ActivityIndicator size="small" color="#007bff" />
+                  ) : (
+                    <Text style={styles.verifyTextInline}>Verify</Text>
+                  )}
+                </TouchableOpacity>
               )
             )}
           </View>
@@ -203,29 +227,36 @@ const handleVerify = async () => {
       )}
 
       <TouchableOpacity
-  style={[styles.otpButton, (!isValid || !isVerified || loggingIn) && styles.otpButtonDisabled]}
-  onPress={async () => {
-    setLoggingIn(true);
-    try {
-      console.log('Login Successful');
-      // Your login logic here
-    } finally {
-      setLoggingIn(false);
-    }
-  }}
-  disabled={!isValid || !isVerified || loggingIn}
->
-  {loggingIn ? (
-    <ActivityIndicator size="small" color="#fff" />
-  ) : (
-    <Text style={styles.otpButtonText}>Login</Text>
-  )}
-</TouchableOpacity>
-
+        style={[
+          styles.otpButton,
+          (!isValid || !isVerified || loggingIn) && styles.otpButtonDisabled,
+        ]}
+        onPress={async () => {
+          setLoggingIn(true);
+          try {
+            const result = await getUserAndToken();
+            if (result) {
+              setUser(result.user);
+              console.log('Login Successful');
+              // Navigate after login if needed:
+              navigation.navigate('DashboardScreen');
+            }
+          } finally {
+            setLoggingIn(false);
+          }
+        }}
+        disabled={!isValid || !isVerified || loggingIn}
+      >
+        {loggingIn ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.otpButtonText}>Login</Text>
+        )}
+      </TouchableOpacity>
 
       <View style={styles.dividerContainer}>
         <View style={styles.divider} />
-        <Text style={styles.dividerText}>Sign in with google</Text>
+        <Text style={styles.dividerText}>Sign in with Google</Text>
         <View style={styles.divider} />
       </View>
 

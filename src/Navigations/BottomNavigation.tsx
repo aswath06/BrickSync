@@ -20,6 +20,11 @@ export const BottomNavigation = () => {
     <BottomTab.Navigator
       screenOptions={{headerShown: false}}
       tabBar={renderTabbar}>
+        <BottomTab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{tabBarLabel: 'Dashboard'}}
+      />
       <BottomTab.Screen
         name="Truck"
         component={Truck}
@@ -30,11 +35,11 @@ export const BottomNavigation = () => {
         component={Orders}
         options={{tabBarLabel: 'Orders'}}
       />
-      <BottomTab.Screen
+      {/* <BottomTab.Screen
         name="Dashboard"
         component={DashboardScreen}
         options={{tabBarLabel: 'Dashboard'}}
-      />
+      /> */}
       <BottomTab.Screen
         name="Profile"
         component={Profile}

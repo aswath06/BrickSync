@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ActivityIndicator, View } from 'react-native';
+import { getToken } from '../services/authStorage';
 
 // Screens
 import {
@@ -21,9 +23,28 @@ import { BottomNavigation } from './BottomNavigation';
 const RootStack = createNativeStackNavigator();
 
 export const Navigation = () => {
+  const [initialRoute, setInitialRoute] = useState(null);
+
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await getToken();
+      setInitialRoute(token ? 'DashboardScreen' : 'FirstPage');
+    };
+    checkToken();
+  }, []);
+
+  // Show loading screen while checking token
+  if (!initialRoute) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <RootStack.Navigator initialRouteName="FirstPage">
+      <RootStack.Navigator initialRouteName={initialRoute}>
         <RootStack.Screen name="GetStarted" component={GetStarted} options={{ headerShown: false }} />
         <RootStack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="FirstPage" component={FirstPage} options={{ headerShown: false }} />
@@ -34,7 +55,7 @@ export const Navigation = () => {
         <RootStack.Screen name="CreateAccountScreen" component={CreateAccountScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="DashboardScreen" component={BottomNavigation} options={{ headerShown: false }} />
         <RootStack.Screen name="DamageHistory" component={DamageHistory} options={{ headerShown: false }} />
-         <RootStack.Screen name="RefuelHistory" component={RefuelHistory} options={{ headerShown: false }} />
+        <RootStack.Screen name="RefuelHistory" component={RefuelHistory} options={{ headerShown: false }} />
       </RootStack.Navigator>
     </NavigationContainer>
   );
