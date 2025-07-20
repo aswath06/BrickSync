@@ -5,7 +5,6 @@ import { DashboardInfoCard } from '../Component/DashboardInfoCard';
 import { TwoPersonIcon } from '../assets';
 import { useUserStore } from '../stores/useUserStore';
 
-const userRole = 1;
 
 const jobData = [
   { id: '1', slNo: '1', customer: 'City center', ord: '5 min', status: 'On time' },
@@ -16,6 +15,9 @@ const jobData = [
 
 export const DashboardScreen = () => {
   const user = useUserStore((state) => state.user);
+  // const userRole = 1;
+  const userRole = user?.userrole;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <UserHeaderCard

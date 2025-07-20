@@ -18,6 +18,7 @@ function App(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor:'white'
   },
 });
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,29 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; // ✅ Fix: useNavigation
+import { useNavigation } from '@react-navigation/native';
 import { useTruckStore } from '../stores/useTruckStore';
 import { ArrowBack } from '../assets';
+import { useUserStore } from '../stores/useUserStore';
 
 export const DriverTruckView = ({ driverId }) => {
-  const navigation = useNavigation(); // ✅ Fix: navigation hook
-  const { trucks } = useTruckStore();
+  const navigation = useNavigation();
+  const { trucks, fetchTrucksByDriverId } = useTruckStore();
+  const user = useUserStore((state) => state.user);
+
+  useEffect(() => {
+    if (driverId) fetchTrucksByDriverId(driverId);
+  }, [driverId]);
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return '-';
+    const date = new Date(isoDate);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
   const truck = trucks.find((t) => t.details.Driverid === driverId);
 
@@ -27,13 +43,11 @@ export const DriverTruckView = ({ driverId }) => {
   }
 
   const {
-    rcExpiry,
     pollution,
     fitness,
     tyreChangedDate,
     insurance,
     permit,
-    driver,
     Driverid,
   } = truck.details;
 
@@ -57,7 +71,9 @@ export const DriverTruckView = ({ driverId }) => {
 
         <View style={styles.card}>
           <Image
-            source={require('../assets/images/image.png')}
+            source={{
+              uri: 'https://truckcdn.cardekho.com/in/tata/signa-3523-tk/tata-signa-3523-tk-98522.jpg?impolicy=resize&imwidth=420',
+            }}
             style={styles.image}
             resizeMode="contain"
           />
@@ -66,35 +82,31 @@ export const DriverTruckView = ({ driverId }) => {
 
           <View style={styles.detailRow}>
             <Text style={styles.label}>Driver Name:</Text>
-            <Text style={styles.value}>{driver}</Text>
+            <Text style={styles.value}>{user?.name || '-'}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.label}>Driver ID:</Text>
-            <Text style={styles.value}>{Driverid}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>RC Expiry:</Text>
-            <Text style={styles.value}>{rcExpiry || '-'}</Text>
+            <Text style={styles.value}>{Driverid || '-'}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.label}>Insurance:</Text>
-            <Text style={styles.value}>{insurance || '-'}</Text>
+            <Text style={styles.value}>{formatDate(insurance)}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.label}>Permit:</Text>
-            <Text style={styles.value}>{permit || '-'}</Text>
+            <Text style={styles.value}>{formatDate(permit)}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.label}>Pollution Expiry:</Text>
-            <Text style={styles.value}>{pollution || '-'}</Text>
+            <Text style={styles.value}>{formatDate(pollution)}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.label}>Fitness Date:</Text>
-            <Text style={styles.value}>{fitness || '-'}</Text>
+            <Text style={styles.value}>{formatDate(fitness)}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.label}>Tyres Changed:</Text>
-            <Text style={styles.value}>{tyreChangedDate || '-'}</Text>
+            <Text style={styles.value}>{formatDate(tyreChangedDate)}</Text>
           </View>
 
           <View style={styles.buttonRow}>
@@ -110,18 +122,17 @@ export const DriverTruckView = ({ driverId }) => {
               <Text style={styles.damageText}>Damage</Text>
             </TouchableOpacity>
 
-           <TouchableOpacity
-  style={styles.refuelBtn}
-  onPress={() =>
-    navigation.navigate('RefuelHistory', {
-      truckId: truck.id,
-      vehicleNumber: truck.number,
-    })
-  }
->
-  <Text style={styles.refuelText}>⛽ Refuel</Text>
-</TouchableOpacity>
-
+            <TouchableOpacity
+              style={styles.refuelBtn}
+              onPress={() =>
+                navigation.navigate('RefuelHistory', {
+                  truckId: truck.id,
+                  vehicleNumber: truck.number,
+                })
+              }
+            >
+              <Text style={styles.refuelText}>⛽ Refuel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -176,7 +187,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  image: { width: 200, height: 200, marginBottom: 12 },
+  image: { width: 300, height: 200, marginBottom: 12 },
   truckNumber: {
     fontSize: 16,
     fontWeight: 'bold',

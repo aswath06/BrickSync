@@ -1,152 +1,114 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Animated,
   Platform,
 } from 'react-native';
-import { ArrowBack, DropdownIcon, FrontTruck, TwoPersonIcon } from '../assets';
+import { ArrowBack, FrontTruck, TwoPersonIcon } from '../assets';
 import { useTruckStore } from '../stores/useTruckStore';
 
-const isValidDate = (dateStr) => new Date(dateStr) > new Date();
+const isValidDate = (date) => new Date(date) > new Date();
 
-const getNearestDue = (details) => {
-  const fields = [
-    { label: 'RC', date: details.rcExpiry },
-    { label: 'Insurance', date: details.insurance },
-    { label: 'Pollution', date: details.pollution },
-  ];
-
-  const expired = [];
-  const dueSoon = [];
-
-  fields.forEach(({ label, date }) => {
-    const expiryDate = new Date(date);
-    const now = new Date();
-    const diffDays = (expiryDate - now) / (1000 * 60 * 60 * 24);
-    if (diffDays <= 0) expired.push(label);
-    else if (diffDays <= 5) dueSoon.push(label);
+const formatDate = (isoDate) => {
+  if (!isoDate) return '-';
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
-
-  if (details.permit.toLowerCase() !== 'yes') expired.push('Permit');
-
-  if (expired.length > 0) return { type: 'expired', labels: expired };
-  if (dueSoon.length > 0) return { type: 'due', labels: dueSoon };
-  return null;
 };
 
-const TruckCard = ({ truckNumber, due, expanded, onToggle, details, isTruckActive }) => {
-  const animatedHeight = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(expanded ? 1 : 0)).current;
+const getNearestDue = (details) => {
+  const { insurance, pollution } = details || {};
+  const dates = [
+    { label: 'Insurance', date: new Date(insurance) },
+    { label: 'Pollution', date: new Date(pollution) },
+  ];
+  const sorted = dates
+    .filter(({ date }) => date instanceof Date && !isNaN(date))
+    .sort((a, b) => a.date - b.date);
+  return sorted[0] || {};
+};
 
-  useEffect(() => {
-    Animated.timing(animatedHeight, {
-      toValue: expanded ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-
-    Animated.timing(rotateAnim, {
-      toValue: expanded ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [expanded]);
-
-  const maxHeight = animatedHeight.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 120],
-  });
-
-  const rotateInterpolate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
+const TruckCard = ({ truckNumber, due, details, isTruckActive }) => {
+  const statusColor = isTruckActive ? '#4caf50' : '#ff9800';
+  const statusText = isTruckActive ? 'Active' : 'Inactive';
 
   return (
-    <TouchableOpacity onPress={onToggle} activeOpacity={0.9} style={styles.truckCard}>
+    <View style={styles.card}>
       <View style={styles.row}>
-        <View style={styles.truckIconBox}>
-          <FrontTruck width={24} height={24} />
-        </View>
+        <FrontTruck width={24} height={24} />
         <Text style={styles.truckNumber}>{truckNumber}</Text>
-
-        <View style={styles.statusWithArrow}>
-          <Text style={[styles.statusBadge, isTruckActive ? styles.active : styles.inactive]}>
-            {isTruckActive ? 'Active' : 'Inactive'}
-          </Text>
-          <TouchableOpacity onPress={onToggle} style={styles.iconPadding}>
-            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
-              <DropdownIcon width={16} height={16} color="#000" />
-            </Animated.View>
-          </TouchableOpacity>
+        <View style={[styles.statusChip, { backgroundColor: statusColor }]}>
+          <Text style={styles.statusText}>{statusText}</Text>
         </View>
       </View>
 
-      <View style={styles.dueRow}>
-        {due ? (
-          <Text
-            style={[
-              styles.dueText,
-              due.type === 'due' && { color: 'orange', fontWeight: 'bold' },
-              due.type === 'expired' && { color: 'red', fontWeight: 'bold' },
-            ]}
-          >
-            {due.type === 'expired' ? 'Expired: ' : 'Upcoming Due: '}
-            {due.labels.join(', ')}
-          </Text>
-        ) : (
-          <Text style={styles.dueText}>Upcoming Due: None</Text>
-        )}
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>RC Expiry:</Text>
+        <Text>{formatDate(details.rcExpiry)}</Text>
       </View>
-
-      <Animated.View style={[styles.extraDetails, { height: maxHeight, overflow: 'hidden' }]}>
-        <Text style={[styles.detailText, !isValidDate(details.rcExpiry) && styles.invalidText]}>
-          RC Expiry: {details.rcExpiry}
-        </Text>
-        <Text style={[styles.detailText, !isValidDate(details.insurance) && styles.invalidText]}>
-          Insurance: {details.insurance}
-        </Text>
-        <Text style={[styles.detailText, details.permit.toLowerCase() !== 'yes' && styles.invalidText]}>
-          Permit Valid: {details.permit}
-        </Text>
-        <Text style={[styles.detailText, !isValidDate(details.pollution) && styles.invalidText]}>
-          Pollution Expiry: {details.pollution}
-        </Text>
-        <TouchableOpacity onPress={() => alert(`Driver: ${details.driver}`)}>
-          <Text style={[styles.detailText, styles.linkText]}>Driver: {details.driver}</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </TouchableOpacity>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Insurance:</Text>
+        <Text>{formatDate(details.insurance)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Pollution:</Text>
+        <Text>{formatDate(details.pollution)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Permit:</Text>
+        <Text>{details.permit || '-'}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Fitness:</Text>
+        <Text>{formatDate(details.fitness)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Tyre Changed:</Text>
+        <Text>{formatDate(details.tyreChangedDate)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Total KM:</Text>
+        <Text>{details.TotalKm || '-'}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Driver:</Text>
+        <Text>{details.driver || '-'}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Driver ID:</Text>
+        <Text>{details.Driverid || '-'}</Text>
+      </View>
+    </View>
   );
 };
 
 export const AdminTruckView = ({ overrideTrucks }) => {
-  const [expandedTruckIndex, setExpandedTruckIndex] = useState(null);
-  const { trucks } = useTruckStore();
-  const allTrucks = overrideTrucks || trucks;
+  const { trucks, fetchAllTrucks } = useTruckStore();
 
-  const handleToggle = (index) => {
-    setExpandedTruckIndex((prev) => (prev === index ? null : index));
-  };
+  useEffect(() => {
+    fetchAllTrucks();
+  }, []);
+
+  const allTrucks = overrideTrucks || trucks;
 
   const sortedTrucks = allTrucks
     .map((truck) => {
-      const { rcExpiry, insurance, permit, pollution } = truck.details;
-      const isRCValid = isValidDate(rcExpiry);
+      const { insurance, permit, pollution } = truck.details;
       const isInsuranceValid = isValidDate(insurance);
       const isPollutionValid = isValidDate(pollution);
-      const isPermitValid = permit.toLowerCase() === 'yes';
-      const isTruckActive = isRCValid && isInsuranceValid && isPollutionValid && isPermitValid;
+      const isPermitValid = permit?.toLowerCase?.() === 'yes';
+      const isTruckActive = isInsuranceValid && isPollutionValid && isPermitValid;
       return { ...truck, isTruckActive };
     })
     .sort((a, b) => {
       const getNextExpiry = (d) =>
         Math.min(
-          new Date(d.rcExpiry).getTime(),
           new Date(d.insurance).getTime(),
           new Date(d.pollution).getTime()
         );
@@ -159,8 +121,10 @@ export const AdminTruckView = ({ overrideTrucks }) => {
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 50 }} style={styles.container}>
       <View style={styles.headerContainer}>
-        <ArrowBack color="black" />
-        <Text style={styles.headerText}>Your Trucks</Text>
+        <TouchableOpacity>
+          <ArrowBack color="black" />
+        </TouchableOpacity>
+        <Text style={styles.headerText}>All Trucks</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -174,7 +138,7 @@ export const AdminTruckView = ({ overrideTrucks }) => {
         </View>
         <View style={styles.statusCard}>
           <View style={styles.statusRow}>
-            <TwoPersonIcon width={24} height={24} color="red" />
+            <TwoPersonIcon width={24} height={24} color="orange" />
             <Text style={styles.statusTitle}>Inactive</Text>
           </View>
           <Text style={styles.statusCount}>{inactiveTrucks.length}</Text>
@@ -189,8 +153,6 @@ export const AdminTruckView = ({ overrideTrucks }) => {
             truckNumber={truck.number}
             due={dueInfo}
             details={truck.details}
-            expanded={expandedTruckIndex === index}
-            onToggle={() => handleToggle(index)}
             isTruckActive={truck.isTruckActive}
           />
         );
@@ -202,142 +164,90 @@ export const AdminTruckView = ({ overrideTrucks }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 16,
-    paddingTop: 50,
+    padding: 12,
+    backgroundColor: '#f9f9f9',
   },
   headerContainer: {
+    paddingTop: Platform.OS === 'android' ? 30 : 50,
+    paddingBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
     alignItems: 'center',
   },
   headerText: {
     fontSize: 20,
     fontWeight: 'bold',
-    fontFamily: 'AbeeZee-Regular',
-    color: 'black',
   },
   statusContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginVertical: 16,
+    gap: 20,
   },
   statusCard: {
-    backgroundColor: 'white',
-    padding: 16,
+    flex: 1,
+    backgroundColor: '#fff',
     borderRadius: 12,
-    width: 180,
-    height: 103,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      android: { elevation: 3 },
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-      },
-    }),
+    padding: 12,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 1, height: 2 },
+    elevation: 2,
+    height: 100,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   statusTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: 'black',
-    marginLeft: 6,
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   statusCount: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    fontFamily: 'AbeeZee-Regular',
-    color: 'black',
+    color: '#333',
   },
-  truckCard: {
-    backgroundColor: 'white',
-    padding: 16,
+  card: {
+    backgroundColor: '#ffffff',
     borderRadius: 12,
-    marginBottom: 16,
-    ...Platform.select({
-      android: { elevation: 2 },
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-    }),
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  truckIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: '#1976d2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
+    marginBottom: 10,
   },
   truckNumber: {
     fontSize: 16,
     fontWeight: 'bold',
-    fontFamily: 'AbeeZee-Regular',
-    color: 'black',
+    marginLeft: 10,
+    flex: 1,
   },
-  statusWithArrow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 'auto',
+  statusChip: {
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
   },
-  statusBadge: {
-    fontSize: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  iconPadding: {
-    paddingLeft: 6,
-  },
-  active: {
-    backgroundColor: '#c8e6c9',
-    color: '#2e7d32',
-  },
-  inactive: {
-    backgroundColor: '#ffcdd2',
-    color: '#c62828',
-  },
-  dueRow: {
-    marginTop: 10,
-  },
-  dueText: {
-    fontSize: 14,
-    fontFamily: 'AbeeZee-Regular',
-    color: 'black',
-  },
-  extraDetails: {
-    marginTop: 10,
-    paddingLeft: 4,
-  },
-  detailText: {
-    fontSize: 13,
-    fontFamily: 'AbeeZee-Regular',
-    color: '#444',
-    marginBottom: 4,
-  },
-  invalidText: {
-    color: 'red',
+  statusText: {
+    color: 'white',
     fontWeight: 'bold',
+    fontSize: 12,
   },
-  linkText: {
-    color: '#1976d2',
-    textDecorationLine: 'underline',
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  label: {
+    fontWeight: 'bold',
+    width: 110,
   },
 });

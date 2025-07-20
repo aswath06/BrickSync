@@ -1,11 +1,30 @@
-export const IP = '10.10.66.33';
-//  http://172.20.10.3:3000
+// config.js
+export const IP = '172.20.10.3';
 export const PORT = 3000;
 export const baseUrl = `http://${IP}:${PORT}`;
 export const verifyUrl = baseUrl;
 
+// Vehicles
+export const GetVehiclesEndpoint = '/api/vehicles';
+export const GetVehicleByIdEndpoint = id => `/api/vehicles/${id}`;
+export const CreateVehicleEndpoint = '/api/vehicles';
+export const UpdateVehicleEndpoint = id => `/api/vehicles/${id}`;
+export const DeleteVehicleEndpoint = id => `/api/vehicles/${id}`;
+export const AddServiceToVehicleEndpoint = id => `/api/vehicles/${id}/service`;
+export const AddRefuelToVehicleEndpoint = id => `/api/vehicles/${id}/refuel`;
+export const GetVehiclesByDriverIdEndpoint = id => `/api/vehicles/by-driver/${id}`;
+// Get user by custom userid
+export const GetUserByUserIdEndpoint = userid => `/api/users/by-userid/${userid}`;
+
+
+// Users
 export const SendOtpEndpoint = '/api/users/send-otp';
-export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp'; // ✅ WhatsApp OTP
+export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp';
 export const VerifyOtpEndpoint = '/api/users/verify-otp';
 export const RegisterEndpoint = '/api/users';
-// http://10.10.66.33:3000
+// export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp';
+// export const SendOtpEndpoint = '/api/users/send-otp';
+// export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp'; // ✅ WhatsApp OTP
+// export const VerifyOtpEndpoint = '/api/users/verify-otp';
+// export const RegisterEndpoint = '/api/users';
+// http://172.20.10.3:3000
