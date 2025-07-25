@@ -19,6 +19,8 @@ import {
   RefuelHistory,
 } from '../Screens';
 import { BottomNavigation } from './BottomNavigation';
+import { CustomerListScreen } from '../Screens/CustomerListScreen';
+import { VehicleListScreen } from '../Screens/VehicleListScreen';
 
 const RootStack = createNativeStackNavigator();
 
@@ -56,6 +58,8 @@ export const Navigation = () => {
         <RootStack.Screen name="DashboardScreen" component={BottomNavigation} options={{ headerShown: false }} />
         <RootStack.Screen name="DamageHistory" component={DamageHistory} options={{ headerShown: false }} />
         <RootStack.Screen name="RefuelHistory" component={RefuelHistory} options={{ headerShown: false }} />
+        <RootStack.Screen name="CustomerListScreen" component={CustomerListScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="VehicleListScreen" component={VehicleListScreen} options={{ headerShown: false }} />
       </RootStack.Navigator>
     </NavigationContainer>
   );

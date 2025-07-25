@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 
 type Job = {
   id: string;
@@ -32,23 +32,31 @@ const getStatusStyle = (status: string) => {
 export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs }) => {
   const renderRow = ({ item }: { item: Job }) => {
     const statusStyle = getStatusStyle(item.status);
+
+    const handlePress = () => {
+      console.log('Job clicked:', item);
+      // Example: navigation.navigate('JobDetails', { jobId: item.id });
+    };
+
     return (
-      <View style={styles.row}>
-        <Text style={styles.cell}>{item.slNo}</Text>
-        <Text style={[styles.cell, styles.customerCell]}>{item.customer}</Text>
-        <Text style={styles.cell}>{item.ord}</Text>
-        <Text
-          style={[
-            styles.status,
-            {
-              backgroundColor: statusStyle.backgroundColor,
-              color: statusStyle.color,
-            },
-          ]}
-        >
-          {item.status}
-        </Text>
-      </View>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+        <View style={styles.row}>
+          <Text style={styles.cell}>{item.slNo}</Text>
+          <Text style={[styles.cell, styles.customerCell]}>{item.customer}</Text>
+          <Text style={styles.cell}>{item.ord}</Text>
+          <Text
+            style={[
+              styles.status,
+              {
+                backgroundColor: statusStyle.backgroundColor,
+                color: statusStyle.color,
+              },
+            ]}
+          >
+            {item.status}
+          </Text>
+        </View>
+      </TouchableOpacity>
     );
   };
 

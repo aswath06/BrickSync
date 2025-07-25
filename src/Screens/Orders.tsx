@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,35 +7,95 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-
 import { ArrowBack, BagIcon } from '../assets';
 import { SearchIcon } from '../assets/icons/SearchIcon';
-import { useProductStore } from '../stores/useProductStore';
+import { getToken } from '../services/authStorage';
+import { baseUrl } from '../../config';
+import { useProductStore } from '../stores/useProductStore'; // ✅ Zustand store
+import { useUserStore } from '../stores/useUserStore';
 
 const filterCategories = ['All', 'Cement', 'Sand', 'Bricks'];
 
 export const Orders = ({ navigation }: any) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [newPrice, setNewPrice] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+    const user = useUserStore((state) => state.user);
 
-  const userRole = 1; // Change this based on your auth logic
-  const { products, setProducts } = useProductStore();
+  const products = useProductStore((state) => state.products);
+  const setProducts = useProductStore((state) => state.setProducts);
+  // const addToCart = useProductStore((state) => state.addToCart);
 
-  const filteredProducts =
-    selectedFilter === 'All'
-      ? products
-      : products.filter(item => item.category === selectedFilter);
+  const userRole = user?.userrole;
 
-  const handlePriceUpdate = () => {
-    const updatedProducts = products.map(p =>
-      p.id === selectedProduct.id ? { ...p, price: newPrice } : p
-    );
-    setProducts(updatedProducts);
-    setShowModal(false);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const token = await getToken();
+
+      const response = await fetch(`${baseUrl}/api/products`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setProducts(data); // ✅ Save in Zustand
+      } else {
+        console.error('Fetch error:', data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProducts = products.filter((item) =>
+    (selectedFilter === 'All' || item.category === selectedFilter) &&
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handlePriceUpdate = async () => {
+    if (!selectedProduct) return;
+    try {
+      const token = await getToken();
+      const response = await fetch(`${baseUrl}/api/products/${selectedProduct.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...selectedProduct, price: newPrice }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const updatedList = products.map((p) =>
+          p.id === selectedProduct.id ? data : p
+        );
+        setProducts(updatedList);
+        Alert.alert('Success', 'Price updated');
+        setShowModal(false);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to update');
+      }
+    } catch (error) {
+      console.error('Update failed:', error);
+    }
   };
 
   const renderItem = ({ item }: any) => (
@@ -51,6 +111,18 @@ export const Orders = ({ navigation }: any) => {
       <Text style={styles.category}>{item.category}</Text>
       <Text style={styles.size}>{item.name} - {item.size}</Text>
       <Text style={styles.price}>{item.price}</Text>
+
+      {/* 🛒 Add to Cart */}
+      {/* <TouchableOpacity
+        style={{ marginTop: 8, backgroundColor: '#1577EA', padding: 6, borderRadius: 6 }}
+        onPress={() => addToCart({
+          product: item,
+          quantity: 1,
+          total: parseFloat(item.price),
+        })}
+      >
+        <Text style={{ color: '#fff', textAlign: 'center' }}>Add to Cart</Text>
+      </TouchableOpacity> */}
     </TouchableOpacity>
   );
 
@@ -67,13 +139,15 @@ export const Orders = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      {/* Search Box */}
+      {/* Search */}
       <View style={styles.searchBox}>
         <SearchIcon width={16} height={16} color="#1577EA" />
         <TextInput
           style={styles.input}
           placeholder="What do you need?"
           placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
       </View>
 
@@ -96,18 +170,25 @@ export const Orders = ({ navigation }: any) => {
       </View>
 
       {/* Product List */}
-      <FlatList
-        data={filteredProducts}
-        numColumns={2}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.productList}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#1577EA" />
+      ) : (
+        <FlatList
+  data={filteredProducts}
+  numColumns={2}
+  renderItem={renderItem}
+  keyExtractor={(item) => item.id}
+  columnWrapperStyle={styles.row}
+  contentContainerStyle={styles.productList}
+  showsVerticalScrollIndicator={false}
+  refreshing={loading}
+  onRefresh={fetchProducts}
+/>
 
-      {/* FAB for price change */}
-      {userRole === 1 && (
+      )}
+
+      {/* Admin Price Update FAB */}
+      {userRole === 1 && products.length > 0 && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => {
@@ -121,7 +202,12 @@ export const Orders = ({ navigation }: any) => {
         </TouchableOpacity>
       )}
 
-      {/* Modal for price update */}
+      {/* Debug Button (optional) */}
+      <TouchableOpacity onPress={() => console.log(useProductStore.getState())}>
+        <Text style={{ textAlign: 'center', color: 'gray', marginVertical: 10 }}>Log Store State</Text>
+      </TouchableOpacity>
+
+      {/* Price Modal */}
       {showModal && selectedProduct && (
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
@@ -132,17 +218,13 @@ export const Orders = ({ navigation }: any) => {
               <Picker
                 selectedValue={selectedProduct.id}
                 onValueChange={(itemValue) => {
-                  const product = products.find(p => p.id === itemValue);
+                  const product = products.find((p) => p.id === itemValue);
                   setSelectedProduct(product);
                   setNewPrice(product?.price || '');
                 }}
               >
-                {products.map(product => (
-                  <Picker.Item
-                    key={product.id}
-                    label={product.name}
-                    value={product.id}
-                  />
+                {products.map((product) => (
+                  <Picker.Item key={product.id} label={product.name} value={product.id} />
                 ))}
               </Picker>
             </View>
@@ -156,10 +238,7 @@ export const Orders = ({ navigation }: any) => {
             />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={handlePriceUpdate}
-              >
+              <TouchableOpacity style={styles.modalButton} onPress={handlePriceUpdate}>
                 <Text style={styles.modalButtonText}>Save</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -175,8 +254,7 @@ export const Orders = ({ navigation }: any) => {
     </View>
   );
 };
-
-
+// Styles unchanged
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FB', padding: 16 },
   header: {
@@ -237,7 +315,6 @@ const styles = StyleSheet.create({
   category: { fontSize: 12, color: '#777', marginTop: 8 },
   size: { fontSize: 13, color: '#333' },
   price: { fontSize: 15, fontWeight: 'bold' },
-
   fab: {
     position: 'absolute',
     bottom: 30,
@@ -255,7 +332,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-
   modalOverlay: {
     position: 'absolute',
     top: 0,

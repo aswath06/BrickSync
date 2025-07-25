@@ -1,3 +1,4 @@
+// src/screens/CartScreen.js
 import React from 'react';
 import {
   View,
@@ -6,17 +7,78 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  ScrollView,
+  Alert,
 } from 'react-native';
 import { ArrowBack } from '../assets';
 import { useProductStore } from '../stores/useProductStore';
+import { useAllUsersStore } from '../stores/useAllUsersStore';
+import axios from 'axios';
+import { baseUrl } from '../../config';
 
-export const CartScreen = ({ navigation }: any) => {
+
+export const CartScreen = ({ navigation, route }) => {
   const { cart, clearCart } = useProductStore();
+  const { users } = useAllUsersStore();
 
+  const selectedCustomer = route?.params?.selectedCustomer;
   const totalAmount = cart.reduce((acc, item) => acc + item.total, 0);
+  const customers = users.filter((user) => user.userrole === 3);
 
-  const renderItem = ({ item }: any) => (
+  const handleCheckout = async () => {
+  if (!selectedCustomer) {
+    Alert.alert('Customer Required', 'Please select a customer before checking out.');
+    return;
+  }
+
+  if (cart.length === 0) {
+    Alert.alert('Cart is Empty', 'Please add items to the cart.');
+    return;
+  }
+
+  const orderPayload = {
+    orderId: `ORD${Date.now()}`,
+    vehicleNumber: 'TN39CK1288',
+    userId: selectedCustomer.userid,
+    customerName: selectedCustomer.name,
+    products: cart.map((item) => ({
+      id: item.product.id,
+      name: item.product.name,
+      quantity: item.quantity,
+      price: item.product.price,
+    })),
+  };
+
+  try {
+    const response = await axios.post(`${baseUrl}/api/orders`, orderPayload, {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 5000, // optional: wait max 5 seconds
+});
+
+    
+    // Debug: print backend response
+    console.log('Response:', response.data);
+
+    if (response.status === 200 || response.status === 201) {
+      Alert.alert('Success', 'Order placed successfully!');
+      clearCart();
+      navigation.navigate('Home');
+    } else {
+      Alert.alert('Error', 'Order could not be placed. Try again.');
+    }
+  } catch (error) {
+    console.error('Order error:', error.response?.data || error.message);
+
+    const errorMessage =
+      error.response?.data?.message || 'Something went wrong while placing the order.';
+
+    Alert.alert('Error', errorMessage);
+  }
+};
+
+
+  const renderItem = ({ item, index }) => (
     <View style={styles.card}>
       <Image
         source={{ uri: item.product.imageUrl }}
@@ -43,6 +105,28 @@ export const CartScreen = ({ navigation }: any) => {
         <View style={{ width: 24 }} />
       </View>
 
+     <View style={styles.selectedCustomerContainer}>
+  {selectedCustomer ? (
+    <Text style={styles.selectedCustomerText}>
+      Selected Customer: {selectedCustomer.name}
+    </Text>
+  ) : (
+    <Text style={styles.selectedCustomerText}>
+      No customer selected.
+    </Text>
+  )}
+
+  <TouchableOpacity
+    style={styles.selectCustomerButton}
+    onPress={() => navigation.navigate('CustomerListScreen', { customers })}
+  >
+    <Text style={styles.selectCustomerText}>
+      {selectedCustomer ? 'Change Customer' : 'Select Customer'}
+    </Text>
+  </TouchableOpacity>
+</View>
+
+
       {cart.length === 0 ? (
         <Text style={styles.emptyText}>Your cart is empty.</Text>
       ) : (
@@ -60,7 +144,7 @@ export const CartScreen = ({ navigation }: any) => {
             <Text style={styles.totalValue}>₹{totalAmount}</Text>
           </View>
 
-          <TouchableOpacity style={styles.checkoutButton}>
+          <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
             <Text style={styles.checkoutText}>Proceed to Checkout</Text>
           </TouchableOpacity>
 
@@ -91,6 +175,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1E1E1E',
   },
+  selectedCustomerContainer: {
+    backgroundColor: '#D0EBFF',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  selectedCustomerText: {
+    fontSize: 15,
+    color: '#000',
+    fontWeight: '500',
+  },
   emptyText: {
     fontSize: 16,
     color: '#999',
@@ -112,6 +207,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+  selectCustomerButton: {
+  backgroundColor: '#1577EA',
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  borderRadius: 8,
+  marginTop: 8,
+  alignSelf: 'flex-start',
+},
+
+selectCustomerText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: '500',
+},
+
   productName: {
     fontSize: 15,
     fontWeight: '600',

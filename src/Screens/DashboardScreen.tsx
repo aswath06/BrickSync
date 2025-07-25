@@ -1,22 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { JobCard, MainCard, PendingJobsTable, UserHeaderCard } from '../Component';
 import { DashboardInfoCard } from '../Component/DashboardInfoCard';
-import { TwoPersonIcon } from '../assets';
 import { useUserStore } from '../stores/useUserStore';
+import { baseUrl } from '../../config';
 
 
-const jobData = [
-  { id: '1', slNo: '1', customer: 'City center', ord: '5 min', status: 'On time' },
-  { id: '2', slNo: '2', customer: 'Airport', ord: '10 min', status: 'Delayed' },
-  { id: '3', slNo: '3', customer: 'University', ord: '20 min', status: 'Assign' },
-  { id: '4', slNo: '4', customer: 'Shopping Mall', ord: '25 min', status: 'Canceled' },
-];99
-
-export const DashboardScreen = () => {
+export const DashboardScreen = ({ navigation }) => {
   const user = useUserStore((state) => state.user);
-  // const userRole = 1;
   const userRole = user?.userrole;
+
+  const [jobData, setJobData] = useState([]);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await fetch(`${baseUrl}/api/orders`);
+        const data = await response.json();
+
+        const transformed = data.map((item, index) => ({
+          id: item.id.toString(),
+          slNo: (index + 1).toString(),
+          customer: item.User?.name || 'Unknown',
+          ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+        }));
+
+        setJobData(transformed);
+      } catch (err) {
+        console.error('Failed to fetch jobs:', err);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -30,7 +47,7 @@ export const DashboardScreen = () => {
       {userRole === 2 ? (
         <>
           <View style={styles.section}>
-            <MainCard 
+            <MainCard
               name={user?.name || 'Guest'}
               company="Aswath Hollow Bricks and Lorry Services"
               balance={user?.balance}
@@ -64,7 +81,6 @@ export const DashboardScreen = () => {
             <DashboardInfoCard
               height={120}
               icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' }}
-              // icon={<TwoPersonIcon/>}
               title="Completed Jobs"
               value={234}
             />
