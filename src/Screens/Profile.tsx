@@ -14,6 +14,7 @@ import { useAllUsersStore } from '../stores/useAllUsersStore';
 import { getToken } from '../services/authStorage';
 import { baseUrl, RegisterEndpoint } from '../../config';
 import { useNavigation } from '@react-navigation/native';
+import { useUserStore } from '../stores/useUserStore';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -24,6 +25,8 @@ export const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const user = useUserStore((state) => state.user);
+  const userRole = user?.userrole;
 
   const fetchUsers = async () => {
     try {
@@ -89,14 +92,14 @@ export const Profile = () => {
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() =>{
+      onPress={() => {
         navigation.navigate('StatementPage', {
           statements: item.statements ?? [],
-  balance: item.balance ?? 0,
-  username: item.name,
-  phoneNumber: item.phone,
-  userId: item.userid, // 👈 Add
-        })
+          balance: item.balance ?? 0,
+          username: item.name,
+          phoneNumber: item.phone,
+          userId: item.userid,
+        });
       }}
     >
       <View style={styles.imageContainer}>
@@ -126,14 +129,20 @@ export const Profile = () => {
     );
   }
 
+  // 🔍 Filter logic here:
+  const filteredUsers =
+    userRole === 1
+      ? users // Admin sees all
+      : users.filter((u) => u.userrole === 1); // Others see only Admins
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>User List</Text>
       {error ? (
         <Text style={styles.errorText}>⚠️ {error}</Text>
-      ) : users.length > 0 ? (
+      ) : filteredUsers.length > 0 ? (
         <FlatList
-          data={users}
+          data={filteredUsers}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           numColumns={2}
@@ -148,6 +157,7 @@ export const Profile = () => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

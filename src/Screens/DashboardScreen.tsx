@@ -4,6 +4,7 @@ import { JobCard, MainCard, PendingJobsTable, UserHeaderCard } from '../Componen
 import { DashboardInfoCard } from '../Component/DashboardInfoCard';
 import { useUserStore } from '../stores/useUserStore';
 import { baseUrl } from '../../config';
+import { useTruckStore } from '../stores/useTruckStore';
 
 export const DashboardScreen = ({ navigation }) => {
   const user = useUserStore((state) => state.user);
@@ -11,43 +12,113 @@ export const DashboardScreen = ({ navigation }) => {
   const [jobData, setJobData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchJobs = async () => {
-  try {
-    const response = await fetch(`${baseUrl}/api/orders`);
-    const data = await response.json();
+  const fetchTrucksByDriverId = useTruckStore((state) => state.fetchTrucksByDriverId);
+  const trucks = useTruckStore((state) => state.trucks);
 
-    const transformed = data.map((item, index) => ({
-  id: item.id.toString(),
-  orderId : item.orderId,
-  slNo: (index + 1).toString(),
-  customer: item.User?.name || 'Unknown',
-  ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-  vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
-  materials: Array.isArray(item.products)
-    ? item.products.map((p) => ({
-        name: p.name,
-        quantity: p.quantity,
-        price: p.price,
-      }))
-    : [],
-}));
-
-    setJobData(transformed);
-  } catch (err) {
-    console.error('Failed to fetch jobs:', err);
-  }
-};
-
-
+  // Initial load
   useEffect(() => {
-    fetchJobs();
+    // console.log('🔄 DashboardScreen mounted');
+    // console.log('👤 User role:', userRole);
+
+    if (userRole === 2 && user?.userid) {
+      // console.log('🛻 Fetching trucks for driver ID:', user.userid);
+      fetchTrucksByDriverId(user.userid);
+    } else {
+      // console.log('🧾 Fetching jobs for admin');
+      fetchJobs();
+    }
   }, []);
+
+  // When trucks update, fetch jobs by vehicle
+  useEffect(() => {
+    if (userRole === 2 && trucks.length > 0) {
+      const vehicleNumber = trucks[0]?.number;
+      // console.log('🚚 Trucks fetched:', trucks);
+      // console.log('🔍 Using vehicle number:', vehicleNumber);
+      if (vehicleNumber) {
+        fetchJobsByVehicle(vehicleNumber);
+      }
+    }
+  }, [trucks]);
+
+  const fetchJobsByVehicle = async (vehicleNumber) => {
+    // console.log('📡 Fetching jobs by vehicle:', vehicleNumber);
+    try {
+      const response = await fetch(`${baseUrl}/api/orders/vehicle/${vehicleNumber}`);
+      const data = await response.json();
+      // console.log('✅ Jobs received (by vehicle):', data.length);
+
+      const transformed = data.map((item, index) => ({
+        id: item.id.toString(),
+        orderId: item.orderId,
+        slNo: (index + 1).toString(),
+        customer: item.User?.name || 'Unknown',
+        customerPhone: item.User?.phone || 'N/A',
+        ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+        vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
+        materials: Array.isArray(item.products)
+          ? item.products.map((p) => ({
+              name: p.name,
+              quantity: p.quantity,
+              price: p.price,
+            }))
+          : [],
+      }));
+
+      // console.log('📦 Transformed jobs (by vehicle):', transformed);
+      setJobData(transformed);
+    } catch (err) {
+      console.error('❌ Failed to fetch jobs by vehicle:', err);
+    }
+  };
+
+  const fetchJobs = async () => {
+    // console.log('📡 Fetching all jobs (admin)');
+    try {
+      const response = await fetch(`${baseUrl}/api/orders`);
+      const data = await response.json();
+      // console.log('✅ Jobs received (all):', data.length);
+
+      const transformed = data.map((item, index) => ({
+        id: item.id.toString(),
+        orderId: item.orderId,
+        slNo: (index + 1).toString(),
+        customer: item.User?.name || 'Unknown',
+        ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+        vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
+        materials: Array.isArray(item.products)
+          ? item.products.map((p) => ({
+              name: p.name,
+              quantity: p.quantity,
+              price: p.price,
+            }))
+          : [],
+      }));
+
+      // console.log('📦 Transformed jobs (all):', transformed);
+      setJobData(transformed);
+    } catch (err) {
+      console.error('❌ Failed to fetch jobs:', err);
+    }
+  };
 
   const onRefresh = useCallback(() => {
+    console.log('🔄 Refresh started');
     setRefreshing(true);
-    fetchJobs().finally(() => setRefreshing(false));
-  }, []);
+    if (userRole === 2 && trucks.length > 0) {
+      fetchJobsByVehicle(trucks[0]?.number).finally(() => {
+        setRefreshing(false);
+        // console.log('✅ Refresh complete (vehicle)');
+      });
+    } else {
+      fetchJobs().finally(() => {
+        setRefreshing(false);
+        // console.log('✅ Refresh complete (admin)');
+      });
+    }
+  }, [trucks]);
 
   return (
     <ScrollView
@@ -76,14 +147,32 @@ export const DashboardScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.section}>
-            <JobCard
-              slNo="01"
-              customerName="Litisha"
-              customerPhone="9976625704"
-              loadDetails={['Maha cement * 2', 'M-Sand - 1 unit']}
-              buttonLabel="Noted"
-              width={380}
-            />
+            {jobData.length === 0 ? (
+              <View>
+                <JobCard
+                  slNo="01"
+                  customerName="Test Customer"
+                  customerPhone="1234567890"
+                  loadDetails={['Sample * 1']}
+                  buttonLabel="Noted"
+                  width={380}
+                />
+              </View>
+            ) : (
+              jobData.map((job, index) => (
+                <View key={job.id} style={styles.section}>
+                  <JobCard
+  slNo={(index + 1).toString().padStart(2, '0')}
+  customerName={job.customer}
+  customerPhone={job.customerPhone}
+  loadDetails={job.materials.map((mat) => `${mat.name} * ${mat.quantity}`)}
+  buttonLabel="Noted"
+  width={380}
+/>
+
+                </View>
+              ))
+            )}
           </View>
         </>
       ) : (
