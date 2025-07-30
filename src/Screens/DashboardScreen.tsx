@@ -18,6 +18,7 @@ export const DashboardScreen = ({ navigation }) => {
 
     const transformed = data.map((item, index) => ({
   id: item.id.toString(),
+  orderId : item.orderId,
   slNo: (index + 1).toString(),
   customer: item.User?.name || 'Unknown',
   ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),

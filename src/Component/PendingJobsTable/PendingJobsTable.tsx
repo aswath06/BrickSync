@@ -8,6 +8,7 @@ type Material = {
 };
 
 type Job = {
+  orderid: any;
   id: string;
   slNo: string;
   customer: string;
@@ -43,16 +44,19 @@ export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs
     const statusStyle = getStatusStyle(item.status);
 
     const handleStatusPress = () => {
-      if (item.status === 'Assign') {
-        navigation.navigate('AssignJob', {
-          jobId: item.id,
-          customerName: item.customer,
-          orderTime: item.ord,
-          vehicleNumber: item.vehicleNumber,
-          materials: item.materials,
-        });
-      }
-    };
+  console.log('Order ID:', item.orderId); // 👈 This logs orderid to the console
+  if (item.status === 'Assign') {
+    navigation.navigate('AssignJob', {
+      jobId: item.id,
+      customerName: item.customer,
+      orderTime: item.ord,
+      vehicleNumber: item.vehicleNumber,
+      materials: item.materials,
+      orderId: item.orderId,
+    });
+  }
+};
+
 
     return (
       <View style={styles.row}>
