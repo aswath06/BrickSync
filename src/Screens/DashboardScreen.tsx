@@ -15,26 +15,17 @@ export const DashboardScreen = ({ navigation }) => {
   const fetchTrucksByDriverId = useTruckStore((state) => state.fetchTrucksByDriverId);
   const trucks = useTruckStore((state) => state.trucks);
 
-  // Initial load
   useEffect(() => {
-    // console.log('🔄 DashboardScreen mounted');
-    // console.log('👤 User role:', userRole);
-
     if (userRole === 2 && user?.userid) {
-      // console.log('🛻 Fetching trucks for driver ID:', user.userid);
       fetchTrucksByDriverId(user.userid);
     } else {
-      // console.log('🧾 Fetching jobs for admin');
       fetchJobs();
     }
   }, []);
 
-  // When trucks update, fetch jobs by vehicle
   useEffect(() => {
     if (userRole === 2 && trucks.length > 0) {
       const vehicleNumber = trucks[0]?.number;
-      // console.log('🚚 Trucks fetched:', trucks);
-      // console.log('🔍 Using vehicle number:', vehicleNumber);
       if (vehicleNumber) {
         fetchJobsByVehicle(vehicleNumber);
       }
@@ -42,62 +33,88 @@ export const DashboardScreen = ({ navigation }) => {
   }, [trucks]);
 
   const fetchJobsByVehicle = async (vehicleNumber) => {
-    // console.log('📡 Fetching jobs by vehicle:', vehicleNumber);
     try {
       const response = await fetch(`${baseUrl}/api/orders/vehicle/${vehicleNumber}`);
       const data = await response.json();
-      // console.log('✅ Jobs received (by vehicle):', data.length);
 
-      const transformed = data.map((item, index) => ({
-        id: item.id.toString(),
-        orderId: item.orderId,
-        slNo: (index + 1).toString(),
-        customer: item.User?.name || 'Unknown',
-        customerPhone: item.User?.phone || 'N/A',
-        ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-        vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
-        materials: Array.isArray(item.products)
-          ? item.products.map((p) => ({
-              name: p.name,
-              quantity: p.quantity,
-              price: p.price,
-            }))
-          : [],
-      }));
+      const transformed = data
+  .filter((item) => item.status.toLowerCase() !== 'delivered') // 👈 Exclude Delivered jobs
+  .map((item, index) => ({
+    id: item.id.toString(),
+    orderId: item.orderId,
+    slNo: (index + 1).toString(),
+    customer: item.User?.name || 'Unknown',
+    customerPhone: item.User?.phone || 'N/A',
+    ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+    vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
+    materials: Array.isArray(item.products)
+      ? item.products.map((p) => ({
+          name: p.name,
+          quantity: p.quantity,
+          price: p.price,
+        }))
+      : [],
+  }));
 
-      // console.log('📦 Transformed jobs (by vehicle):', transformed);
+
       setJobData(transformed);
     } catch (err) {
       console.error('❌ Failed to fetch jobs by vehicle:', err);
     }
   };
 
+ const updateOrderStatus = async (orderId, status) => {
+  try {
+    const response = await fetch(`${baseUrl}/api/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update status to ${status}`);
+    }
+
+    // Refresh jobs after update
+    if (userRole === 2 && trucks.length > 0) {
+      await fetchJobsByVehicle(trucks[0]?.number);
+    } else {
+      await fetchJobs();
+    }
+  } catch (err) {
+    console.error('❌ Error updating order status:', err);
+  }
+};
+
+
   const fetchJobs = async () => {
-    // console.log('📡 Fetching all jobs (admin)');
     try {
       const response = await fetch(`${baseUrl}/api/orders`);
       const data = await response.json();
-      // console.log('✅ Jobs received (all):', data.length);
 
-      const transformed = data.map((item, index) => ({
-        id: item.id.toString(),
-        orderId: item.orderId,
-        slNo: (index + 1).toString(),
-        customer: item.User?.name || 'Unknown',
-        ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-        vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
-        materials: Array.isArray(item.products)
-          ? item.products.map((p) => ({
-              name: p.name,
-              quantity: p.quantity,
-              price: p.price,
-            }))
-          : [],
-      }));
+      const transformed = data
+  .filter((item) => item.status.toLowerCase() !== 'delivered') // 👈 Exclude Delivered jobs
+  .map((item, index) => ({
+    id: item.id.toString(),
+    orderId: item.orderId,
+    slNo: (index + 1).toString(),
+    customer: item.User?.name || 'Unknown',
+    ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+    vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
+    materials: Array.isArray(item.products)
+      ? item.products.map((p) => ({
+          name: p.name,
+          quantity: p.quantity,
+          price: p.price,
+        }))
+      : [],
+  }));
 
-      // console.log('📦 Transformed jobs (all):', transformed);
+
       setJobData(transformed);
     } catch (err) {
       console.error('❌ Failed to fetch jobs:', err);
@@ -105,18 +122,11 @@ export const DashboardScreen = ({ navigation }) => {
   };
 
   const onRefresh = useCallback(() => {
-    console.log('🔄 Refresh started');
     setRefreshing(true);
     if (userRole === 2 && trucks.length > 0) {
-      fetchJobsByVehicle(trucks[0]?.number).finally(() => {
-        setRefreshing(false);
-        // console.log('✅ Refresh complete (vehicle)');
-      });
+      fetchJobsByVehicle(trucks[0]?.number).finally(() => setRefreshing(false));
     } else {
-      fetchJobs().finally(() => {
-        setRefreshing(false);
-        // console.log('✅ Refresh complete (admin)');
-      });
+      fetchJobs().finally(() => setRefreshing(false));
     }
   }, [trucks]);
 
@@ -148,26 +158,38 @@ export const DashboardScreen = ({ navigation }) => {
 
           <View style={styles.section}>
             {jobData.length === 0 ? (
-              <View>
-                <JobCard
-                  slNo="01"
-                  customerName="Test Customer"
-                  customerPhone="1234567890"
-                  loadDetails={['Sample * 1']}
-                  buttonLabel="Noted"
-                  width={380}
-                />
-              </View>
+              <JobCard
+                slNo="01"
+                customerName="Test Customer"
+                customerPhone="1234567890"
+                loadDetails={['Sample * 1']}
+                buttonLabel="Noted"
+                width={380}
+                onPress={() => console.log('Noted pressed')}
+              />
             ) : (
               jobData.map((job, index) => (
                 <View key={job.id} style={styles.section}>
-                  <JobCard
+<JobCard
   slNo={(index + 1).toString().padStart(2, '0')}
   customerName={job.customer}
   customerPhone={job.customerPhone}
   loadDetails={job.materials.map((mat) => `${mat.name} * ${mat.quantity}`)}
-  buttonLabel="Noted"
+  buttonLabel={
+    job.status === 'Delivered'
+      ? 'Delivered'
+      : job.status === 'Noted'
+      ? 'Mark as Delivered'
+      : 'Mark as Noted'
+  }
   width={380}
+  onPress={() => {
+    if (job.status === 'Noted') {
+      updateOrderStatus(job.orderId, 'delivered');
+    } else if (job.status !== 'Delivered') {
+      updateOrderStatus(job.orderId, 'noted');
+    }
+  }}
 />
 
                 </View>

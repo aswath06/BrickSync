@@ -33,6 +33,7 @@ export const JobCard: React.FC<JobCardProps> = ({
   width = 330,
   height = 'auto',
   style,
+  onPress,
 }) => {
   return (
     <View style={[styles.card, { width, height }, style]}>
@@ -80,7 +81,7 @@ export const JobCard: React.FC<JobCardProps> = ({
 
       {/* Optional Button */}
       {buttonLabel && (
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button} onPress={onPress}>
           <Text style={styles.buttonText}>{buttonLabel}</Text>
         </TouchableOpacity>
       )}
