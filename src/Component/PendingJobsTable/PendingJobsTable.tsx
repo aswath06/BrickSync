@@ -1,17 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 
+type Material = {
+  name: string;
+  quantity: number;
+  price: string;
+};
+
 type Job = {
   id: string;
   slNo: string;
   customer: string;
   ord: string;
   status: string;
+  vehicleNumber: string;
+  materials: Material[];
 };
 
 type Props = {
   title?: string;
   jobs: Job[];
+  navigation: any;
 };
 
 const getStatusStyle = (status: string) => {
@@ -29,21 +38,29 @@ const getStatusStyle = (status: string) => {
   }
 };
 
-export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs }) => {
+export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs, navigation }) => {
   const renderRow = ({ item }: { item: Job }) => {
     const statusStyle = getStatusStyle(item.status);
 
-    const handlePress = () => {
-      console.log('Job clicked:', item);
-      // Example: navigation.navigate('JobDetails', { jobId: item.id });
+    const handleStatusPress = () => {
+      if (item.status === 'Assign') {
+        navigation.navigate('AssignJob', {
+          jobId: item.id,
+          customerName: item.customer,
+          orderTime: item.ord,
+          vehicleNumber: item.vehicleNumber,
+          materials: item.materials,
+        });
+      }
     };
 
     return (
-      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        <View style={styles.row}>
-          <Text style={styles.cell}>{item.slNo}</Text>
-          <Text style={[styles.cell, styles.customerCell]}>{item.customer}</Text>
-          <Text style={styles.cell}>{item.ord}</Text>
+      <View style={styles.row}>
+        <Text style={styles.cell}>{item.slNo}</Text>
+        <Text style={[styles.cell, styles.customerCell]}>{item.customer}</Text>
+        <Text style={styles.cell}>{item.ord}</Text>
+
+        <TouchableOpacity onPress={handleStatusPress} activeOpacity={0.7}>
           <Text
             style={[
               styles.status,
@@ -55,8 +72,8 @@ export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs
           >
             {item.status}
           </Text>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     );
   };
 

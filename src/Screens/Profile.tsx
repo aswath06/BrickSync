@@ -7,58 +7,73 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { useAllUsersStore } from '../stores/useAllUsersStore';
 import { getToken } from '../services/authStorage';
 import { baseUrl, RegisterEndpoint } from '../../config';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 16px padding + 16px gap
+const CARD_WIDTH = (width - 48) / 2;
 
 export const Profile = () => {
+  const navigation = useNavigation<any>();
   const { users, setUsers } = useAllUsersStore();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUsers = async () => {
+    try {
+      setError(null);
+      const token = await getToken();
+      if (!token) {
+        setError('Token not found');
+        return;
+      }
+
+      const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Fetch error:', errorText);
+        throw new Error('Failed to fetch users');
+      }
+
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (err: any) {
+      console.error('Error:', err);
+      setError(err.message);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = await getToken();
-        if (!token) {
-          setError('Token not found');
-          return;
-        }
-
-        const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Fetch error:', errorText);
-          throw new Error('Failed to fetch users');
-        }
-
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setUsers(data);
-        } else {
-          throw new Error('Invalid response format');
-        }
-      } catch (err) {
-        console.error('Error:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+    const load = async () => {
+      setLoading(true);
+      await fetchUsers();
+      setLoading(false);
     };
-
-    fetchUsers();
+    load();
   }, []);
 
-  const getRoleLabel = (role: any) => {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchUsers();
+    setRefreshing(false);
+  };
+
+  const getRoleLabel = (role: number) => {
     switch (role) {
       case 1:
         return 'Admin';
@@ -71,12 +86,25 @@ export const Profile = () => {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
+  const renderItem = ({ item }: any) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>{
+        navigation.navigate('StatementPage', {
+          statements: item.statements ?? [],
+  balance: item.balance ?? 0,
+  username: item.name,
+  phoneNumber: item.phone,
+  userId: item.userid, // 👈 Add
+        })
+      }}
+    >
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri: item.image || 'https://static.vecteezy.com/system/resources/previews/029/271/062/non_2x/avatar-profile-icon-in-flat-style-male-user-profile-illustration-on-isolated-background-man-profile-sign-business-concept-vector.jpg',
+            uri:
+              item.image ||
+              'https://static.vecteezy.com/system/resources/previews/029/271/062/non_2x/avatar-profile-icon-in-flat-style-male-user-profile-illustration-on-isolated-background-man-profile-sign-business-concept-vector.jpg',
           }}
           style={styles.image}
         />
@@ -87,7 +115,7 @@ export const Profile = () => {
       <Text style={styles.name}>{item.name}</Text>
       <Text style={styles.detail}>Balance: ₹{item.balance}</Text>
       <Text style={styles.detail}>Phone: {item.phone}</Text>
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -110,6 +138,9 @@ export const Profile = () => {
           renderItem={renderItem}
           numColumns={2}
           columnWrapperStyle={styles.row}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       ) : (
         <Text style={styles.text}>No users available</Text>
@@ -117,7 +148,6 @@ export const Profile = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

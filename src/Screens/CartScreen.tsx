@@ -63,7 +63,9 @@ export const CartScreen = ({ navigation, route }) => {
     if (response.status === 200 || response.status === 201) {
       Alert.alert('Success', 'Order placed successfully!');
       clearCart();
-      navigation.navigate('Home');
+      navigation.navigate('DashboardScreen', { screen: 'Profile' });
+
+
     } else {
       Alert.alert('Error', 'Order could not be placed. Try again.');
     }
