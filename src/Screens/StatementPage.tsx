@@ -9,11 +9,13 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import { baseUrl } from '../../config';
+import { Picker } from '@react-native-picker/picker';
 
 type Statement = {
   date: string;
@@ -126,22 +128,48 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   }, [searchText, sortBy, visibleStatements]);
 
   const exportToCSV = async () => {
-    const rows = [
-      ['Date', 'Mode', 'Order ID', 'Amount', 'Type'],
-      ...filteredStatements.map((s) => [
-        new Date(s.date).toLocaleString(),
-        s.modeOfPayment,
-        s.orderId ?? '-',
-        s.amount.toString(),
-        s.typeOfPayment ?? '-',
-      ]),
-    ];
+    try {
+      const data = filteredStatements.length > 0 ? filteredStatements : visibleStatements;
+      if (data.length === 0) {
+        Alert.alert('No data', 'There are no statements to export.');
+        return;
+      }
 
-    const csvContent = rows.map((r) => r.join(',')).join('\n');
-    const path = `${RNFS.DocumentDirectoryPath}/statement_export.csv`;
+      const rows = [
+        ['Date', 'Mode', 'Order ID', 'Amount', 'Type'],
+        ...data.map((s) => [
+          new Date(s.date).toLocaleString(),
+          s.modeOfPayment,
+          s.orderId ?? '-',
+          s.amount.toString(),
+          s.typeOfPayment ?? '-',
+        ]),
+      ];
 
-    await RNFS.writeFile(path, csvContent, 'utf8');
-    await Share.open({ url: `file://${path}`, type: 'text/csv' });
+      const csvContent = rows.map((r) => r.join(',')).join('\n');
+
+      const fileName = 'statement_export.csv';
+      const path = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+
+      await RNFS.writeFile(path, csvContent, 'utf8');
+
+      const exists = await RNFS.exists(path);
+      if (!exists) {
+        throw new Error('CSV file not found');
+      }
+
+      await Share.open({
+        title: 'Export Statement CSV',
+        url: Platform.OS === 'android' ? `file://${path}` : path,
+        type: 'text/csv',
+        failOnCancel: false,
+      });
+
+      Alert.alert('Success', `CSV exported to: ${path}`);
+    } catch (err: any) {
+      console.error('CSV Export Error:', err);
+      Alert.alert('Export failed', err.message || 'Unknown error');
+    }
   };
 
   const renderItem = ({ item }: { item: Statement }) => (
@@ -219,8 +247,19 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
             <Text style={styles.modalTitle}>Add Received Amount</Text>
 
             <TextInput style={styles.input} placeholder="Enter amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-            <TextInput style={styles.input} placeholder="Type of Payment" value={typeOfPayment} onChangeText={setTypeOfPayment} />
-
+            <Text style={{ marginBottom: 6, fontWeight: '600' }}>Type of Payment</Text>
+<View style={styles.pickerContainer}>
+  <Picker
+    selectedValue={typeOfPayment}
+    onValueChange={(itemValue) => setTypeOfPayment(itemValue)}
+    mode="dropdown"
+  >
+    <Picker.Item label="Cash" value="Cash" />
+    <Picker.Item label="Bank" value="Bank" />
+    <Picker.Item label="UPI" value="UPI" />
+    <Picker.Item label="Cheque" value="Cheque" />
+  </Picker>
+</View>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#28a745' }]} onPress={handleAddStatement}>
                 <Text style={styles.modalButtonText}>Submit</Text>
@@ -236,7 +275,6 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   );
 };
 
-// --- Styles ---
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
   pageTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#333', marginTop: 30 },
@@ -289,4 +327,11 @@ const styles = StyleSheet.create({
   exportText: {
     color: '#28a745', fontWeight: 'bold',
   },
+  pickerContainer: {
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 6,
+  marginBottom: 12,
+},
+
 });

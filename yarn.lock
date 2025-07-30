@@ -2992,6 +2992,7 @@ __metadata:
     react-native-document-picker: ^9.3.1
     react-native-fs: ^2.20.0
     react-native-modal-datetime-picker: ^18.0.0
+    react-native-permissions: ^5.4.2
     react-native-safe-area-context: ^5.5.1
     react-native-screens: ^4.11.1
     react-native-share: ^12.1.1
@@ -8289,6 +8290,20 @@ __metadata:
     "@react-native-community/datetimepicker": ">=6.7.0"
     react-native: ">=0.65.0"
   checksum: 30d28a8e599c7a36df4c3e93928aa246087edb95a82a98cb1162b045d18db47447c4e28a89190c83a8258f080066531b2b67805a9aeb007b135d62abfccf8c4c
+  languageName: node
+  linkType: hard
+
+"react-native-permissions@npm:^5.4.2":
+  version: 5.4.2
+  resolution: "react-native-permissions@npm:5.4.2"
+  peerDependencies:
+    react: ">=18.1.0"
+    react-native: ">=0.70.0"
+    react-native-windows: ">=0.70.0"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: fac680b7d85fb979806156d6c9f90dee9c8299b83eb9d2d82bee50aec4baa71b0f5d3cf79e8bf02345e67f77d6cb0fbfbe7e54d02b6822de0ae2e0d9323a6614
   languageName: node
   linkType: hard
 
