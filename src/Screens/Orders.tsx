@@ -17,6 +17,7 @@ import { getToken } from '../services/authStorage';
 import { baseUrl } from '../../config';
 import { useProductStore } from '../stores/useProductStore'; // ✅ Zustand store
 import { useUserStore } from '../stores/useUserStore';
+import LottieView from 'lottie-react-native';
 
 const filterCategories = ['All', 'Cement', 'Sand', 'Bricks'];
 
@@ -170,9 +171,16 @@ export const Orders = ({ navigation }: any) => {
       </View>
 
       {/* Product List */}
-      {loading ? (
-        <ActivityIndicator size="large" color="#1577EA" />
-      ) : (
+     {loading ? (
+  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <LottieView
+      source={require('../assets/lottie/Roboloading.json')}
+      autoPlay
+      loop
+      style={{ width: 150, height: 150 }}
+    />
+  </View>
+) : (
         <FlatList
   data={filteredProducts}
   numColumns={2}

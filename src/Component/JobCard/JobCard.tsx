@@ -19,6 +19,8 @@ type JobCardProps = {
   width?: number | string;
   height?: number | string;
   style?: ViewStyle;
+  disabled?: boolean;
+  onPress?: () => void; // ✅ Ensure this is included
 };
 
 export const JobCard: React.FC<JobCardProps> = ({
@@ -33,11 +35,12 @@ export const JobCard: React.FC<JobCardProps> = ({
   width = 330,
   height = 'auto',
   style,
+  disabled = false,
   onPress,
 }) => {
   return (
     <View style={[styles.card, { width, height }, style]}>
-      {/* Header with title and optional status */}
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
         {statusText && statusColor && (
@@ -47,7 +50,7 @@ export const JobCard: React.FC<JobCardProps> = ({
         )}
       </View>
 
-      {/* Row entries */}
+      {/* Info rows */}
       <View style={styles.row}>
         <Text style={styles.label}>Sl.no</Text>
         <Text style={styles.colon}>:</Text>
@@ -66,7 +69,7 @@ export const JobCard: React.FC<JobCardProps> = ({
         <Text style={styles.value}>{customerPhone}</Text>
       </View>
 
-      {/* Load Details row */}
+      {/* Load Details */}
       <View style={styles.row}>
         <Text style={styles.label}>Load details</Text>
         <Text style={styles.colon}>:</Text>
@@ -79,9 +82,13 @@ export const JobCard: React.FC<JobCardProps> = ({
         </View>
       </View>
 
-      {/* Optional Button */}
+      {/* Button */}
       {buttonLabel && (
-        <TouchableOpacity style={styles.button} onPress={onPress}>
+        <TouchableOpacity
+          style={[styles.button, disabled && styles.disabledButton]}
+          onPress={onPress}
+          disabled={disabled}
+        >
           <Text style={styles.buttonText}>{buttonLabel}</Text>
         </TouchableOpacity>
       )}
@@ -116,7 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   statusText: {
-    color: '#027A48',
+    color: '#fff',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -157,6 +164,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     paddingHorizontal: 24,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: '#fff',

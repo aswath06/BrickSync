@@ -1,5 +1,5 @@
 // config.js
-export const IP = '10.10.67.167';
+export const IP = '10.10.172.181';
 export const PORT = 3000;
 export const baseUrl = `http://${IP}:${PORT}`;
 export const verifyUrl = baseUrl;
