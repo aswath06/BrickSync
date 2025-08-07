@@ -9,6 +9,7 @@ import {
   Dimensions,
   RefreshControl,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { useAllUsersStore } from '../stores/useAllUsersStore';
 import { getToken } from '../services/authStorage';
@@ -25,10 +26,13 @@ export const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const user = useUserStore((state) => state.user);
   const userRole = user?.userrole;
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageNumber = 1, isRefresh = false) => {
     try {
       setError(null);
       const token = await getToken();
@@ -37,11 +41,14 @@ export const Profile = () => {
         return;
       }
 
-      const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${baseUrl}${RegisterEndpoint}?page=${pageNumber}&limit=10`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -51,7 +58,12 @@ export const Profile = () => {
 
       const data = await response.json();
       if (Array.isArray(data)) {
-        setUsers(data);
+        if (isRefresh || pageNumber === 1) {
+          setUsers(data);
+        } else {
+          setUsers((prev) => [...prev, ...data]);
+        }
+        setHasMore(data.length === 10); // Assume no more if less than 10
       } else {
         throw new Error('Invalid response format');
       }
@@ -64,7 +76,8 @@ export const Profile = () => {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await fetchUsers();
+      await fetchUsers(1, true);
+      setPage(2);
       setLoading(false);
     };
     load();
@@ -72,8 +85,18 @@ export const Profile = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchUsers();
+    await fetchUsers(1, true);
+    setPage(2);
     setRefreshing(false);
+  };
+
+  const loadMore = async () => {
+    if (!loading && hasMore && !refreshing) {
+      setLoading(true);
+      await fetchUsers(page);
+      setPage((prev) => prev + 1);
+      setLoading(false);
+    }
   };
 
   const getRoleLabel = (role: number) => {
@@ -121,7 +144,7 @@ export const Profile = () => {
     </TouchableOpacity>
   );
 
-  if (loading) {
+  if (loading && users.length === 0) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -129,20 +152,34 @@ export const Profile = () => {
     );
   }
 
-  // 🔍 Filter logic here:
   const filteredUsers =
     userRole === 1
-      ? users // Admin sees all
-      : users.filter((u) => u.userrole === 1); // Others see only Admins
+      ? users
+      : users.filter((u) => u.userrole === 1);
+
+  const searchedUsers = filteredUsers.filter(
+    (u) =>
+      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.phone?.toString().includes(searchQuery)
+  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>User List</Text>
+
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search by name or phone"
+        placeholderTextColor="#999"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+
       {error ? (
         <Text style={styles.errorText}>⚠️ {error}</Text>
-      ) : filteredUsers.length > 0 ? (
+      ) : searchedUsers.length > 0 ? (
         <FlatList
-          data={filteredUsers}
+          data={searchedUsers}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           numColumns={2}
@@ -150,9 +187,27 @@ export const Profile = () => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          onEndReachedThreshold={0.5}
+          onEndReached={loadMore}
+          ListFooterComponent={
+            hasMore && !refreshing ? (
+              <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator size="small" color="#0000ff" />
+              </View>
+            ) : null
+          }
         />
       ) : (
-        <Text style={styles.text}>No users available</Text>
+        <Text style={styles.text}>No users found</Text>
+      )}
+
+      {userRole === 1 && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => navigation.navigate('AddUserPage')}
+        >
+          <Text style={styles.fabText}>＋</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -167,8 +222,19 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 10,
     textAlign: 'center',
+    color: 'black',
+    marginTop: 30,
+  },
+  searchInput: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    marginBottom: 16,
   },
   row: {
     justifyContent: 'space-between',
@@ -240,5 +306,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#007bff',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  fabText: {
+    fontSize: 28,
+    color: '#fff',
+    marginBottom: 2,
   },
 });

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { ArrowBack, FrontTruck, TwoPersonIcon } from '../assets';
 import { useTruckStore } from '../stores/useTruckStore';
 
@@ -90,9 +91,15 @@ const TruckCard = ({ truckNumber, due, details, isTruckActive }) => {
 
 export const AdminTruckView = ({ overrideTrucks }) => {
   const { trucks, fetchAllTrucks } = useTruckStore();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchAllTrucks();
+    const loadTrucks = async () => {
+      setIsLoading(true);
+      await fetchAllTrucks();
+      setIsLoading(false);
+    };
+    loadTrucks();
   }, []);
 
   const allTrucks = overrideTrucks || trucks;
@@ -117,6 +124,20 @@ export const AdminTruckView = ({ overrideTrucks }) => {
 
   const activeTrucks = sortedTrucks.filter((t) => t.isTruckActive);
   const inactiveTrucks = sortedTrucks.filter((t) => !t.isTruckActive);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <LottieView
+          source={require('../assets/lottie/Roboloading.json')}
+          autoPlay
+          loop
+          style={{ width: 180, height: 180 }}
+        />
+        <Text style={{ marginTop: 10, color: '#444' }}>Loading trucks...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 50 }} style={styles.container}>
@@ -167,12 +188,19 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#f9f9f9',
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+  },
   headerContainer: {
     paddingTop: Platform.OS === 'android' ? 30 : 50,
     paddingBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    color: '#000',
   },
   headerText: {
     fontSize: 20,
@@ -205,6 +233,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     fontWeight: 'bold',
+    color: '#000',
   },
   statusCount: {
     fontSize: 18,
@@ -231,6 +260,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 10,
     flex: 1,
+    color: '#000',
   },
   statusChip: {
     borderRadius: 12,
@@ -249,5 +279,6 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: 'bold',
     width: 110,
+    color: '#000',
   },
 });

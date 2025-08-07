@@ -304,6 +304,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginVertical: 8,
     fontSize: 14,
+    color: '#000',
   },
 
   summaryText: {

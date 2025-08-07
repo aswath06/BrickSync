@@ -1,24 +1,42 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   Image,
   TouchableOpacity,
   ScrollView,
   Alert,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { removeToken } from '../services/authStorage'; // adjust path if needed
-import { useUserStore } from '../stores/useUserStore'; // ✅ import your zustand store
+import { removeToken } from '../services/authStorage';
+import { useUserStore } from '../stores/useUserStore';
 
 const { height: screenHeight } = Dimensions.get('window');
 
 export const Settings = () => {
   const navigation = useNavigation();
-  const { user, clearUser } = useUserStore(); // ✅ get user from global store
+  const { user, clearUser } = useUserStore();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const profileImage =
     'https://cdn-icons-png.flaticon.com/512/4140/4140048.png';
@@ -31,7 +49,7 @@ export const Settings = () => {
         style: 'destructive',
         onPress: async () => {
           await removeToken();
-          clearUser(); // ✅ clear global user data
+          clearUser();
           navigation.reset({
             index: 0,
             routes: [{ name: 'LoginScreen' }],
@@ -46,39 +64,56 @@ export const Settings = () => {
       contentContainerStyle={[styles.container, { minHeight: screenHeight }]}
     >
       <View style={styles.header}>
-        <Text style={styles.headerText}>Profile</Text>
+        <Text style={styles.headerText}>My Profile</Text>
       </View>
 
-      <View style={styles.profileImageContainer}>
-        <Image source={{ uri: profileImage }} style={styles.profileImage} />
-        <TouchableOpacity style={styles.cameraIcon}>
-          <Image
-            source={{
-              uri: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
-            }}
-            style={styles.cameraImage}
-          />
-        </TouchableOpacity>
-      </View>
+      <Animated.View
+        style={[
+          styles.contentWrapper,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        <View style={styles.profileImageContainer}>
+          <Image source={{ uri: profileImage }} style={styles.profileImage} />
+          <TouchableOpacity style={styles.cameraIcon}>
+            <Image
+              source={{
+                uri: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+              }}
+              style={styles.cameraImage}
+            />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.formContainer}>
-        <TextInput style={styles.input} placeholder="Name" value={user?.name || ''} />
-        <TextInput style={styles.input} placeholder="Email Id (Optional)" value={user?.email || ''} />
-        <TextInput style={styles.input} placeholder="Phone no.." value={user?.phone || ''} />
-        <TextInput style={styles.input} placeholder="Date of birth" value={user?.dob || '02-03-2002'} />
-        <TextInput style={styles.input} placeholder="Gender" value={user?.gender || 'Male'} />
+        <View style={styles.infoCard}>
+          <InfoRow label="Name" value={user?.name || 'Not available'} />
+          <InfoRow label="Email" value={user?.email || 'Not provided'} />
+          <InfoRow label="Phone" value={user?.phone || 'Not available'} />
+          <InfoRow label="Date of Birth" value={user?.dob || '02-03-2002'} />
+          <InfoRow label="Gender" value={user?.gender || 'Male'} />
+        </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 };
 
+const InfoRow = ({ label, value }) => (
+  <View style={styles.infoRow}>
+    <Text style={styles.infoLabel}>{label}</Text>
+    <Text style={styles.infoValue}>{value}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f4f6fc',
     alignItems: 'center',
     paddingBottom: 40,
   },
@@ -93,19 +128,24 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#fff',
   },
+  contentWrapper: {
+    width: '90%',
+    marginTop: -30,
+    alignItems: 'center',
+  },
   profileImageContainer: {
-    marginTop: -40,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20,
   },
   profileImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     borderWidth: 3,
     borderColor: '#fff',
   },
@@ -122,25 +162,36 @@ const styles = StyleSheet.create({
     height: 18,
     tintColor: '#fff',
   },
-  formContainer: {
-    width: '90%',
-    marginTop: 32,
-    gap: 20,
+  infoCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
   },
-  input: {
-    backgroundColor: '#F3F3F3',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  infoRow: {
+    marginBottom: 16,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 4,
+  },
+  infoValue: {
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    color: '#111',
+    fontWeight: '600',
   },
   logoutButton: {
-    marginTop: 30,
+    marginTop: 24,
     backgroundColor: '#FF3B30',
     paddingVertical: 14,
     borderRadius: 20,
+    width: '100%',
     alignItems: 'center',
   },
   logoutText: {
