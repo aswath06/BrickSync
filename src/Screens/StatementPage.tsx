@@ -150,13 +150,12 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       }
 
       const rows = [
-        ['Date', 'Mode', 'Order ID', 'Amount', 'Type'],
+        ['Date', 'Mode', 'Order ID / Type', 'Amount'],
         ...data.map((s) => [
           new Date(s.date).toLocaleString(),
           s.modeOfPayment,
-          s.orderId ?? '-',
+          s.modeOfPayment === 'Received' ? s.typeOfPayment ?? '-' : s.orderId ?? '-',
           s.amount.toString(),
-          s.typeOfPayment ?? '-',
         ]),
       ];
 
@@ -208,23 +207,17 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
       <Text style={styles.cell}>{item.modeOfPayment}</Text>
       <Text style={styles.cell}>
-  {item.modeOfPayment === 'Received' ? (
-    item.typeOfPayment ?? '-'
-  ) : item.orderId ? (
-    <TouchableOpacity onPress={() => handleOrderPress(item.orderId!)}>
-      <Text style={{ color: '#007bff' }}>{item.orderId}</Text>
-    </TouchableOpacity>
-  ) : (
-    '-'
-  )}
-</Text>
-
-      <Text
-        style={[
-          styles.cell,
-          { color: item.modeOfPayment === 'Order' ? 'red' : 'green' },
-        ]}
-      >
+        {item.modeOfPayment === 'Received' ? (
+          item.typeOfPayment ?? '-'
+        ) : item.orderId ? (
+          <TouchableOpacity onPress={() => handleOrderPress(item.orderId!)}>
+            <Text style={{ color: '#007bff' }}>{item.orderId}</Text>
+          </TouchableOpacity>
+        ) : (
+          '-'
+        )}
+      </Text>
+      <Text style={[styles.cell, { color: item.modeOfPayment === 'Order' ? 'red' : 'green' }]}>
         ₹{item.amount}
       </Text>
     </View>
@@ -269,7 +262,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       <View style={styles.headerRow}>
         <Text style={styles.headerCell}>Date</Text>
         <Text style={styles.headerCell}>Mode</Text>
-        <Text style={styles.headerCell}>Order ID</Text>
+        <Text style={styles.headerCell}>Order ID / Type</Text>
         <Text style={styles.headerCell}>Amount</Text>
       </View>
 
@@ -284,12 +277,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       />
 
       {/* Add Received Amount Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentTall}>
             <Text style={styles.modalTitleColorful}>Add Received Amount</Text>
@@ -303,15 +291,9 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
               placeholderTextColor="#888"
             />
 
-            <Text style={{ marginBottom: 6, fontWeight: '600', color: '#333' }}>
-              Type of Payment
-            </Text>
+            <Text style={{ marginBottom: 6, fontWeight: '600', color: '#333' }}>Type of Payment</Text>
             <View style={styles.pickerContainerColorful}>
-              <Picker
-                selectedValue={typeOfPayment}
-                onValueChange={(itemValue) => setTypeOfPayment(itemValue)}
-                mode="dropdown"
-              >
+              <Picker selectedValue={typeOfPayment} onValueChange={(v) => setTypeOfPayment(v)} mode="dropdown">
                 <Picker.Item label="Cash" value="Cash" />
                 <Picker.Item label="Bank" value="Bank" />
                 <Picker.Item label="UPI" value="UPI" />
@@ -320,16 +302,10 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
             </View>
 
             <View style={styles.modalButtonsTall}>
-              <TouchableOpacity
-                style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]}
-                onPress={handleAddStatement}
-              >
+              <TouchableOpacity style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]} onPress={handleAddStatement}>
                 <Text style={styles.modalButtonText}>Submit</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]}
-                onPress={() => setModalVisible(false)}
-              >
+              <TouchableOpacity style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -338,12 +314,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       </Modal>
 
       {/* Order Details Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={orderModalVisible}
-        onRequestClose={() => setOrderModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent={true} visible={orderModalVisible} onRequestClose={() => setOrderModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Order Details</Text>
@@ -365,28 +336,17 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
                 {selectedOrder.image && (
                   <>
                     <Text style={{ marginTop: 10, fontWeight: '600' }}>Order Image:</Text>
-                    <Image
-                      source={{ uri: selectedOrder.image }}
-                      style={styles.orderImage}
-                      resizeMode="contain"
-                    />
-                    <Text style={{ fontSize: 10, color: '#555', marginTop: 4 }}>
-                      *Click image to open in browser
-                    </Text>
+                    <Image source={{ uri: selectedOrder.image }} style={styles.orderImage} resizeMode="contain" />
+                    <Text style={{ fontSize: 10, color: '#555', marginTop: 4 }}>*Click image to open in browser</Text>
                     <TouchableOpacity onPress={() => Linking.openURL(selectedOrder.image)}>
-                      <Text style={{ color: '#007bff', marginTop: 4, textDecorationLine: 'underline' }}>
-                        Open Full Image
-                      </Text>
+                      <Text style={{ color: '#007bff', marginTop: 4, textDecorationLine: 'underline' }}>Open Full Image</Text>
                     </TouchableOpacity>
                   </>
                 )}
               </View>
             )}
 
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#dc3545', marginTop: 12 }]}
-              onPress={() => setOrderModalVisible(false)}
-            >
+            <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#dc3545', marginTop: 12 }]} onPress={() => setOrderModalVisible(false)}>
               <Text style={styles.modalButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -395,7 +355,6 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
