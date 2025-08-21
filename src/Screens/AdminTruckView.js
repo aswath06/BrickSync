@@ -51,41 +51,42 @@ const TruckCard = ({ truckNumber, due, details, isTruckActive }) => {
       </View>
 
       <View style={styles.detailRow}>
-        <Text style={styles.label}>RC Expiry:</Text>
-        <Text>{formatDate(details.rcExpiry)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Insurance:</Text>
-        <Text>{formatDate(details.insurance)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Pollution:</Text>
-        <Text>{formatDate(details.pollution)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Permit:</Text>
-        <Text>{details.permit || '-'}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Fitness:</Text>
-        <Text>{formatDate(details.fitness)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Tyre Changed:</Text>
-        <Text>{formatDate(details.tyreChangedDate)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Total KM:</Text>
-        <Text>{details.TotalKm || '-'}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Driver:</Text>
-        <Text>{details.driver || '-'}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>Driver ID:</Text>
-        <Text>{details.Driverid || '-'}</Text>
-      </View>
+  <Text style={styles.label}>RC Expiry:</Text>
+  <Text style={styles.valueText}>{formatDate(details.rcExpiry)}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Insurance:</Text>
+  <Text style={styles.valueText}>{formatDate(details.insurance)}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Pollution:</Text>
+  <Text style={styles.valueText}>{formatDate(details.pollution)}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Permit:</Text>
+  <Text style={styles.valueText}>{details.permit || '-'}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Fitness:</Text>
+  <Text style={styles.valueText}>{formatDate(details.fitness)}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Tyre Changed:</Text>
+  <Text style={styles.valueText}>{formatDate(details.tyreChangedDate)}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Total KM:</Text>
+  <Text style={styles.valueText}>{details.TotalKm || '-'}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Driver:</Text>
+  <Text style={styles.valueText}>{details.driver || '-'}</Text>
+</View>
+<View style={styles.detailRow}>
+  <Text style={styles.label}>Driver ID:</Text>
+  <Text style={styles.valueText}>{details.Driverid || '-'}</Text>
+</View>
+
     </View>
   );
 };
@@ -189,6 +190,9 @@ const styles = StyleSheet.create({
     padding: moderateScale(24),
     backgroundColor: '#f9f9f9',
   },
+  valueText:{
+    color:'black'
+  },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -229,6 +233,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: moderateScale(4),
+    
   },
   statusTitle: {
     marginLeft: moderateScale(8),

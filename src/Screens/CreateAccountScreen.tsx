@@ -226,6 +226,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Name</Text>
           <TextInput
             placeholder="Enter Your Name"
+            placeholderTextColor="#888" 
             value={name}
             onChangeText={(val) => {
               setName(val);
@@ -239,6 +240,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Email Id (Optional)</Text>
           <TextInput
             placeholder="Enter your Email"
+            placeholderTextColor="#888" 
             value={email}
             onChangeText={(val) => {
               setEmail(val);
@@ -256,6 +258,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <View style={styles.inlineInput}>
             <TextInput
               placeholder="Enter your Phone Number"
+              placeholderTextColor="#888" 
               value={phone}
               onChangeText={(text) => {
                 const cleaned = text.replace(/[^0-9]/g, '');
@@ -294,6 +297,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Password</Text>
           <TextInput
             placeholder="Minimum 8 characters"
+            placeholderTextColor="#888" 
             value={password}
             onChangeText={(val) => {
               setPassword(val);
@@ -312,6 +316,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Confirm password</Text>
           <TextInput
             placeholder="Confirm your password"
+            placeholderTextColor="#888" 
             value={confirmPassword}
             onChangeText={(val) => {
               setConfirmPassword(val);
@@ -361,6 +366,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: moderateScale(6),
     marginTop: moderateScale(50),
+    color:'black'
   },
   subtitle: {
     color: 'gray',

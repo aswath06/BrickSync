@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   heartIcon: { fontSize: moderateScale(14) },
   category: { fontSize: moderateScale(12), color: '#777', marginTop: moderateScale(8) },
   size: { fontSize: moderateScale(13), color: '#333' },
-  price: { fontSize: moderateScale(15), fontWeight: 'bold' },
+  price: { fontSize: moderateScale(15), fontWeight: 'bold' ,color:"black" },
   fab: {
     position: 'absolute',
     bottom: moderateScale(30),

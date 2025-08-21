@@ -166,6 +166,7 @@ export const LoginScreen = ({ navigation, route }) => {
           <View style={styles.inputWrapper}>
             <TextInput
               placeholder="Enter your phone number"
+              placeholderTextColor="#888" 
               style={styles.input}
               keyboardType="number-pad"
               maxLength={10}
@@ -184,6 +185,7 @@ export const LoginScreen = ({ navigation, route }) => {
           <View style={styles.inputWrapper}>
             <TextInput
               placeholder="Enter your email"
+              placeholderTextColor="#888" 
               style={styles.input}
               keyboardType="email-address"
               value={email}
