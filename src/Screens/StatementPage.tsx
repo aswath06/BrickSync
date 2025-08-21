@@ -208,14 +208,17 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
       <Text style={styles.cell}>{item.modeOfPayment}</Text>
       <Text style={styles.cell}>
-        {item.orderId ? (
-          <TouchableOpacity onPress={() => handleOrderPress(item.orderId!)}>
-            <Text style={{ color: '#007bff' }}>{item.orderId}</Text>
-          </TouchableOpacity>
-        ) : (
-          '-'
-        )}
-      </Text>
+  {item.modeOfPayment === 'Received' ? (
+    item.typeOfPayment ?? '-'
+  ) : item.orderId ? (
+    <TouchableOpacity onPress={() => handleOrderPress(item.orderId!)}>
+      <Text style={{ color: '#007bff' }}>{item.orderId}</Text>
+    </TouchableOpacity>
+  ) : (
+    '-'
+  )}
+</Text>
+
       <Text
         style={[
           styles.cell,
@@ -246,6 +249,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       <TextInput
         style={styles.input}
         placeholder="Search by payment type or mode"
+        placeholderTextColor="#888"
         value={searchText}
         onChangeText={setSearchText}
       />
