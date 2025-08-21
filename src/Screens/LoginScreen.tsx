@@ -21,7 +21,7 @@ export const LoginScreen = ({ navigation, route }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isValid, setIsValid] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(true); // ✅ Phone is verified by default
   const [verifying, setVerifying] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const setUser = useUserStore((state) => state.setUser);
@@ -29,15 +29,10 @@ export const LoginScreen = ({ navigation, route }) => {
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhone(filtered);
-    if (!route?.params?.verified) setIsVerified(false);
+    if (!route?.params?.verified) setIsVerified(true); // Phone stays verified
   };
 
   const handleVerify = async () => {
-    if (activeTab === 'phone' && phone.length !== 10) {
-      setError('Phone number must be 10 digits.');
-      return;
-    }
-
     if (activeTab === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
@@ -66,7 +61,9 @@ export const LoginScreen = ({ navigation, route }) => {
       }
 
       setError('');
-      navigation.navigate('Otp', { contact, type: activeTab, source: 'login' });
+      if (activeTab === 'email') {
+        navigation.navigate('Otp', { contact, type: activeTab, source: 'login' });
+      }
     } catch (error) {
       console.error('OTP send error:', error);
       setError('Network error while sending OTP');
@@ -110,14 +107,20 @@ export const LoginScreen = ({ navigation, route }) => {
       else if (type === 'email') setEmail(contact || '');
     } else {
       const { type, contact } = route.params || {};
-      if (type === 'phone') setPhone(contact || '');
-      else if (type === 'email') setEmail(contact || '');
+      if (type === 'phone') {
+        setPhone(contact || '');
+        setIsVerified(true); // ✅ Phone verified by default
+      } else if (type === 'email') {
+        setEmail(contact || '');
+        setIsVerified(false);
+      }
     }
   }, [route?.params]);
 
   useEffect(() => {
     if (activeTab === 'phone') {
       setIsValid(phone.length === 10);
+      setIsVerified(true); // Phone stays verified
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       setIsValid(emailRegex.test(email));
@@ -135,7 +138,7 @@ export const LoginScreen = ({ navigation, route }) => {
           onPress={() => {
             setActiveTab('email');
             setError('');
-            if (!route?.params?.verified) setIsVerified(false);
+            setIsVerified(false); // Email must verify
           }}
         >
           <Text style={[styles.tabText, activeTab === 'email' && styles.activeTabText]}>
@@ -148,7 +151,7 @@ export const LoginScreen = ({ navigation, route }) => {
           onPress={() => {
             setActiveTab('phone');
             setError('');
-            if (!route?.params?.verified) setIsVerified(false);
+            setIsVerified(true); // Phone verified by default
           }}
         >
           <Text style={[styles.tabText, activeTab === 'phone' && styles.activeTabText]}>
@@ -169,15 +172,7 @@ export const LoginScreen = ({ navigation, route }) => {
               value={phone}
               onChangeText={handlePhoneChange}
             />
-            {isVerified ? (
-              <Text style={styles.verifyTextInline}>Verified</Text>
-            ) : (
-              isValid && (
-                <TouchableOpacity onPress={handleVerify}>
-                  <Text style={styles.verifyTextInline}>Verify</Text>
-                </TouchableOpacity>
-              )
-            )}
+            <Text style={styles.verifyTextInline}>Verified</Text> 
           </View>
           {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
@@ -194,7 +189,7 @@ export const LoginScreen = ({ navigation, route }) => {
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                if (!route?.params?.verified) setIsVerified(false);
+                setIsVerified(false); // Email needs verification
               }}
             />
             {isVerified ? (
@@ -225,7 +220,7 @@ export const LoginScreen = ({ navigation, route }) => {
           try {
             const result = await getUserAndToken();
             if (result) {
-              setUser(result.user); // ✅ full user stored in Zustand
+              setUser(result.user);
               console.log('Login Successful');
               navigation.navigate('DashboardScreen');
             }
@@ -241,7 +236,6 @@ export const LoginScreen = ({ navigation, route }) => {
           <Text style={styles.otpButtonText}>Login</Text>
         )}
       </TouchableOpacity>
-
       <View style={styles.dividerContainer}>
         <View style={styles.divider} />
         <Text style={styles.dividerText}>Sign in with Google</Text>

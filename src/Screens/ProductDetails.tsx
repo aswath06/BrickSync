@@ -17,13 +17,13 @@ import { useProductStore } from '../stores/useProductStore';
 const { height } = Dimensions.get('window');
 
 export const ProductDetails = ({ route, navigation }: any) => {
-  const { productId, product: passedProduct } = route.params;
+  const { productId, product: passedProduct } = route.params || {};
 
   // Load product either from params or Zustand store by id
   const product =
     passedProduct || useProductStore.getState().getProductById(productId);
 
-  // If product not found, show fallback UI
+  // Fallback UI if product not found
   if (!product) {
     return (
       <View style={styles.center}>
@@ -38,18 +38,27 @@ export const ProductDetails = ({ route, navigation }: any) => {
   const isTypeSelectable = !!product.typeOptions;
   const isSandCategory = product.category === 'Sand';
 
-  const types = isTypeSelectable ? product.availableSizes : null;
-  const [selectedType, setSelectedType] = useState(types ? types[0] : null);
+  // Safe type and size arrays
+  const types: string[] = Array.isArray(product.availableSizes)
+    ? product.availableSizes
+    : [];
+  const [selectedType, setSelectedType] = useState(types[0] || '');
 
-  const sizes =
-    isTypeSelectable && selectedType
-      ? product.typeOptions![selectedType]
-      : product.availableSizes || [product.size!];
+  const sizes: string[] =
+    (product.typeOptions &&
+      selectedType &&
+      Array.isArray(product.typeOptions[selectedType])
+      ? product.typeOptions[selectedType]
+      : Array.isArray(product.availableSizes)
+      ? product.availableSizes
+      : product.size
+      ? [product.size]
+      : []);
+  const [selectedSize, setSelectedSize] = useState(sizes[0] || '');
 
-  const [selectedSize, setSelectedSize] = useState(sizes[0]);
   const [quantity, setQuantity] = useState('');
-  const description = product.description || 'No description available.';
-  const unitPrice = parseInt(product.price.replace(/[^\d]/g, ''), 10);
+  const description = product.description ?? 'No description available.';
+  const unitPrice = parseInt(product.price?.replace(/[^\d]/g, '') || '0', 10);
 
   const animScale = useRef(new Animated.Value(1)).current;
   const animTranslateY = useRef(new Animated.Value(0)).current;
@@ -72,15 +81,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
       total,
     });
 
-    console.log({
-      product: product.name,
-      selectedType,
-      selectedSize,
-      quantity: qty,
-      total,
-    });
-
-    // Animation for full screen (excluding header)
+    // Animation
     Animated.parallel([
       Animated.timing(animScale, {
         toValue: 0.1,
@@ -101,8 +102,8 @@ export const ProductDetails = ({ route, navigation }: any) => {
   };
 
   useEffect(() => {
-    if (isTypeSelectable && selectedType) {
-      const defaultSize = product.typeOptions![selectedType][0];
+    if (isTypeSelectable && selectedType && product.typeOptions) {
+      const defaultSize = product.typeOptions[selectedType]?.[0] ?? '';
       setSelectedSize(defaultSize);
     }
   }, [selectedType, product.typeOptions, isTypeSelectable]);
@@ -127,7 +128,6 @@ export const ProductDetails = ({ route, navigation }: any) => {
           transform: [{ scale: animScale }, { translateY: animTranslateY }],
         }}
       >
-        {/* Product Image */}
         <Image
           source={{ uri: product.imageUrl }}
           style={styles.image}
@@ -139,7 +139,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 40 }}
-            nestedScrollEnabled={true}
+            nestedScrollEnabled
           >
             <View style={styles.dragHandle} />
             <Text style={styles.productName}>{product.name}</Text>
@@ -152,7 +152,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
               <>
                 <Text style={styles.chooseSize}>Choose Type</Text>
                 <View style={styles.sizeRow}>
-                  {types!.map((type: string) => (
+                  {types.map((type: string) => (
                     <TouchableOpacity
                       key={type}
                       style={[
@@ -177,7 +177,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
             )}
 
             {/* Size Selector */}
-            {!isSandCategory && (
+            {!isSandCategory && sizes.length > 0 && (
               <>
                 <Text style={styles.chooseSize}>Choose Size</Text>
                 <View style={styles.sizeRow}>
@@ -238,7 +238,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', position: 'relative' },
+  container: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   backBtn: { marginTop: 20 },
   header: {
@@ -252,13 +252,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '600' },
   heartIcon: { fontSize: 22 },
   image: { width: '100%', height: 400 },
-
   bottomSheet: {
     backgroundColor: '#f0f0f0',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 20,
-    paddingBottom: 20,
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -278,7 +276,6 @@ const styles = StyleSheet.create({
   price: { fontSize: 16, fontWeight: '600', color: '#1577EA', marginBottom: 10 },
   descriptionLabel: { fontWeight: '600', marginBottom: 4 },
   details: { fontSize: 13, color: '#666', marginBottom: 12 },
-
   chooseSize: { fontWeight: '600', marginBottom: 6 },
   sizeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   sizeButton: {
@@ -295,7 +292,6 @@ const styles = StyleSheet.create({
   },
   sizeText: { fontSize: 13, color: '#333' },
   sizeTextActive: { fontSize: 13, color: '#fff' },
-
   quantity: { fontWeight: '600' },
   input: {
     backgroundColor: '#fff',
@@ -306,15 +302,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000',
   },
-
-  summaryText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-    marginTop: 4,
-  },
-
+  summaryText: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4, marginTop: 4 },
   cartButton: {
     backgroundColor: '#1577EA',
     paddingVertical: 14,
@@ -322,13 +310,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  cartText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
+  cartText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 });
-function alert(arg0: string) {
-  throw new Error('Function not implemented.');
-}
-

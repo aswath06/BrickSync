@@ -23,8 +23,9 @@ export const useTruckStore = create((set) => ({
           insurance: truck.insurance,
           permit: truck.permit,
           driver: truck.driverName,
-          Driverid: truck.driverId,
+          Driverid: truck.driverId, 
           TotalKm: truck.totalKm,
+          vehicleImage: truck.vehicleImage || null,
         },
         damageHistory: (truck.Services || []).map((service) => ({
           id: `S${service.id}`,

@@ -10,6 +10,8 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  Linking,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
@@ -23,6 +25,11 @@ type Statement = {
   orderId?: string;
   modeOfPayment: string;
   typeOfPayment?: string;
+  products?: any[];
+  vehicleNo?: string;
+  invoiceNo?: string;
+  status?: string;
+  image?: string;
 };
 
 type Props = {
@@ -52,6 +59,9 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   const [searchText, setSearchText] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
 
+  const [orderModalVisible, setOrderModalVisible] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Statement | null>(null);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -74,12 +84,14 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      const saved = await AsyncStorage.getItem('statements');
-      if (saved) {
-        const localData = JSON.parse(saved) as Statement[];
-        setVisibleStatements(localData.slice(0, PAGE_SIZE));
-      }
-    } catch {}
+      const res = await fetch(`${baseUrl}/api/users/orders/${userId}`);
+      if (!res.ok) throw new Error('Failed to fetch orders');
+      const data = await res.json();
+      setVisibleStatements(data.slice(0, PAGE_SIZE));
+      await AsyncStorage.setItem('statements', JSON.stringify(data));
+    } catch (err) {
+      console.error(err);
+    }
     setPage(1);
     setRefreshing(false);
   };
@@ -103,6 +115,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       Alert.alert('Success', 'Statement added!');
       setModalVisible(false);
       setAmount('');
+      onRefresh();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Something went wrong');
     }
@@ -147,16 +160,9 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       ];
 
       const csvContent = rows.map((r) => r.join(',')).join('\n');
-
       const fileName = 'statement_export.csv';
       const path = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-
       await RNFS.writeFile(path, csvContent, 'utf8');
-
-      const exists = await RNFS.exists(path);
-      if (!exists) {
-        throw new Error('CSV file not found');
-      }
 
       await Share.open({
         title: 'Export Statement CSV',
@@ -172,11 +178,43 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
     }
   };
 
+  const handleOrderPress = async (orderId: string) => {
+    try {
+      const res = await fetch(`https://bricksyncbackend-1.onrender.com/api/orders/${orderId}`);
+      if (!res.ok) throw new Error('Failed to fetch order details');
+      const data = await res.json();
+
+      const orderDetails: Statement = {
+        date: data.createdAt,
+        amount: data.products.reduce((acc, p) => acc + parseFloat(p.price) * parseFloat(p.quantity), 0),
+        orderId: data.orderId,
+        modeOfPayment: 'Order',
+        products: data.products,
+        vehicleNo: data.vehicleNumber,
+        status: data.status,
+        image: data.image,
+      };
+
+      setSelectedOrder(orderDetails);
+      setOrderModalVisible(true);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to fetch order');
+    }
+  };
+
   const renderItem = ({ item }: { item: Statement }) => (
     <View style={styles.row}>
       <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
       <Text style={styles.cell}>{item.modeOfPayment}</Text>
-      <Text style={styles.cell}>{item.orderId ?? '-'}</Text>
+      <Text style={styles.cell}>
+        {item.orderId ? (
+          <TouchableOpacity onPress={() => handleOrderPress(item.orderId!)}>
+            <Text style={{ color: '#007bff' }}>{item.orderId}</Text>
+          </TouchableOpacity>
+        ) : (
+          '-'
+        )}
+      </Text>
       <Text
         style={[
           styles.cell,
@@ -240,34 +278,112 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
 
-      {/* Modal */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+      {/* Add Received Amount Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Received Amount</Text>
+          <View style={styles.modalContentTall}>
+            <Text style={styles.modalTitleColorful}>Add Received Amount</Text>
 
-            <TextInput style={styles.input} placeholder="Enter amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-            <Text style={{ marginBottom: 6, fontWeight: '600' }}>Type of Payment</Text>
-<View style={styles.pickerContainer}>
-  <Picker
-    selectedValue={typeOfPayment}
-    onValueChange={(itemValue) => setTypeOfPayment(itemValue)}
-    mode="dropdown"
-  >
-    <Picker.Item label="Cash" value="Cash" />
-    <Picker.Item label="Bank" value="Bank" />
-    <Picker.Item label="UPI" value="UPI" />
-    <Picker.Item label="Cheque" value="Cheque" />
-  </Picker>
-</View>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#28a745' }]} onPress={handleAddStatement}>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter amount"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+              placeholderTextColor="#888"
+            />
+
+            <Text style={{ marginBottom: 6, fontWeight: '600', color: '#333' }}>
+              Type of Payment
+            </Text>
+            <View style={styles.pickerContainerColorful}>
+              <Picker
+                selectedValue={typeOfPayment}
+                onValueChange={(itemValue) => setTypeOfPayment(itemValue)}
+                mode="dropdown"
+              >
+                <Picker.Item label="Cash" value="Cash" />
+                <Picker.Item label="Bank" value="Bank" />
+                <Picker.Item label="UPI" value="UPI" />
+                <Picker.Item label="Cheque" value="Cheque" />
+              </Picker>
+            </View>
+
+            <View style={styles.modalButtonsTall}>
+              <TouchableOpacity
+                style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]}
+                onPress={handleAddStatement}
+              >
                 <Text style={styles.modalButtonText}>Submit</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#dc3545' }]} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Order Details Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={orderModalVisible}
+        onRequestClose={() => setOrderModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Order Details</Text>
+
+            {selectedOrder && (
+              <View>
+                <Text>Order ID: {selectedOrder.orderId}</Text>
+                <Text>Vehicle No: {selectedOrder.vehicleNo ?? '-'}</Text>
+                <Text>Invoice No: {selectedOrder.invoiceNo ?? '-'}</Text>
+                <Text>Products:</Text>
+                {selectedOrder.products?.map((p: any, i: number) => (
+                  <Text key={i}>
+                    {i + 1}. {p.name} | Price: {p.price} | Quantity: {p.quantity}
+                  </Text>
+                ))}
+                <Text>Status: {selectedOrder.status ?? '-'}</Text>
+                <Text>Date: {new Date(selectedOrder.date).toLocaleString()}</Text>
+
+                {selectedOrder.image && (
+                  <>
+                    <Text style={{ marginTop: 10, fontWeight: '600' }}>Order Image:</Text>
+                    <Image
+                      source={{ uri: selectedOrder.image }}
+                      style={styles.orderImage}
+                      resizeMode="contain"
+                    />
+                    <Text style={{ fontSize: 10, color: '#555', marginTop: 4 }}>
+                      *Click image to open in browser
+                    </Text>
+                    <TouchableOpacity onPress={() => Linking.openURL(selectedOrder.image)}>
+                      <Text style={{ color: '#007bff', marginTop: 4, textDecorationLine: 'underline' }}>
+                        Open Full Image
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#dc3545', marginTop: 12 }]}
+              onPress={() => setOrderModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -284,54 +400,55 @@ const styles = StyleSheet.create({
   actionButton: { backgroundColor: '#007bff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6 },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   balanceText: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#444' },
-  input: {
-    borderWidth: 1, borderColor: '#ccc', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12,
-  },
-  headerRow: {
-    flexDirection: 'row', backgroundColor: '#eaeaea', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#ccc',
-  },
-  headerCell: {
-    flex: 1, fontWeight: 'bold', textAlign: 'center', fontSize: 13,
-  },
-  row: {
-    flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f0f0f0',
-  },
-  cell: {
-    flex: 1, textAlign: 'center', fontSize: 13, color: '#333',
-  },
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
-  },
-  modalContent: {
-    width: '85%', backgroundColor: '#fff', borderRadius: 10, padding: 20, elevation: 5,
-  },
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
+  headerRow: { flexDirection: 'row', backgroundColor: '#eaeaea', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#ccc' },
+  headerCell: { flex: 1, fontWeight: 'bold', textAlign: 'center', fontSize: 13 },
+  row: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f0f0f0' },
+  cell: { flex: 1, textAlign: 'center', fontSize: 13, color: '#333' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '85%', backgroundColor: '#fff', borderRadius: 10, padding: 20, elevation: 5 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
-  modalButtons: {
-    flexDirection: 'row', justifyContent: 'space-between',
+  modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
+  modalButton: { flex: 1, padding: 10, marginHorizontal: 5, borderRadius: 6 },
+  modalButtonText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
+  sortRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  sortButton: { color: '#555', fontWeight: 'bold' },
+  activeSort: { color: '#007bff', textDecorationLine: 'underline' },
+  exportText: { color: '#28a745', fontWeight: 'bold' },
+  pickerContainer: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, marginBottom: 12 },
+  orderImage: { width: '100%', height: 200, borderRadius: 8, marginTop: 6, borderWidth: 1, borderColor: '#ccc' },
+  modalContentTall: {
+    width: '90%',
+    backgroundColor: '#ffe4e1',
+    borderRadius: 12,
+    padding: 25,
+    elevation: 8,
+    maxHeight: '80%',
+    justifyContent: 'center',
   },
-  modalButton: {
-    flex: 1, padding: 10, marginHorizontal: 5, borderRadius: 6,
+  modalTitleColorful: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: '#d6336c',
   },
-  modalButtonText: {
-    color: '#fff', textAlign: 'center', fontWeight: 'bold',
+  pickerContainerColorful: {
+    borderWidth: 1,
+    borderColor: '#d6336c',
+    borderRadius: 8,
+    marginBottom: 16,
+    backgroundColor: '#fff0f5',
   },
-  sortRow: {
-    flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12,
+  modalButtonsTall: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
   },
-  sortButton: {
-    color: '#555', fontWeight: 'bold',
+  modalButtonTall: {
+    flex: 1,
+    paddingVertical: 14,
+    marginHorizontal: 6,
+    borderRadius: 8,
   },
-  activeSort: {
-    color: '#007bff', textDecorationLine: 'underline',
-  },
-  exportText: {
-    color: '#28a745', fontWeight: 'bold',
-  },
-  pickerContainer: {
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 6,
-  marginBottom: 12,
-},
-
 });

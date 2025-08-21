@@ -1,7 +1,7 @@
 // config.js
-export const IP = '192.169.0.106';
+export const IP = '10.10.190.161';
 export const PORT = 3000;
-export const baseUrl = `http://${IP}:${PORT}`;
+export const baseUrl = `https://bricksyncbackend-1.onrender.com`;
 export const verifyUrl = baseUrl;
 
 // Vehicles
@@ -17,7 +17,7 @@ export const GetUserByUserIdEndpoint = userid => `/api/users/by-userid/${userid}
 
 
 // Users
-export const SendOtpEndpoint = '/api/users/send-otp';
+export const SendOtpEndpoint = '/api/users/send-otp/email';
 export const SendOtpWhatsappEndpoint = '/api/users/send-otp/whatsapp';
 export const VerifyOtpEndpoint = '/api/users/verify-otp';
 export const RegisterEndpoint = '/api/users';

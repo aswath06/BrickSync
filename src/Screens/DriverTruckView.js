@@ -71,12 +71,13 @@ export const DriverTruckView = ({ driverId }) => {
 
         <View style={styles.card}>
           <Image
-            source={{
-              uri: 'https://truckcdn.cardekho.com/in/tata/signa-3523-tk/tata-signa-3523-tk-98522.jpg?impolicy=resize&imwidth=420',
-            }}
-            style={styles.image}
-            resizeMode="contain"
-          />
+  source={{
+    uri: truck.details.vehicleImage || 'https://example.com/default-truck.jpg', // fallback if no image
+  }}
+  style={styles.image}
+  resizeMode="contain"
+/>
+
 
           <Text style={styles.truckNumber}>{truck.number}</Text>
 
