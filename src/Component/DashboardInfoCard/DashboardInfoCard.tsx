@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import { moderateScale } from '../../Screens/utils/scalingUtils';
 
 type DashboardInfoCardProps = {
   height?: number;
@@ -27,38 +28,38 @@ export const DashboardInfoCard: React.FC<DashboardInfoCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: 170,
-    borderRadius: 20,
+    width: moderateScale(170),
+    borderRadius: moderateScale(20),
     backgroundColor: '#fff',
     justifyContent: 'center',
-    padding: 16,
-    margin: 8,
+    padding: moderateScale(16),
+    margin: moderateScale(8),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: moderateScale(2),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: moderateScale(12),
   },
   icon: {
-    width: 26,
-    height: 26,
-    marginRight: 8,
+    width: moderateScale(26),
+    height: moderateScale(26),
+    marginRight: moderateScale(8),
   },
   title: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '500',
     color: '#000',
   },
   value: {
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: 'bold',
     color: '#000',
-     textAlign: 'center',        
-    alignSelf: 'center',   
+    textAlign: 'center',
+    alignSelf: 'center',
   },
 });

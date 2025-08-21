@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ViewStyle } from 'react-native';
 import { BellIcons } from '../../assets';
+import { moderateScale } from '../../Screens/utils/scalingUtils';
 
 type Props = {
   name: string;
@@ -31,27 +32,28 @@ export const UserHeaderCard: React.FC<Props> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    borderRadius: moderateScale(16),
+    paddingHorizontal: moderateScale(16),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#000',
     shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: moderateScale(2) },
+    shadowRadius: moderateScale(6),
     elevation: 2,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: moderateScale(48),
+    height: moderateScale(48),
+    borderRadius: moderateScale(12),
   },
   greeting: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '600',
     color: '#2B3235',
     flex: 1,
     textAlign: 'center',
   },
 });
+

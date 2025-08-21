@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { ArrowBack, EditIcon } from '../assets';
 import { verifyUrl, VerifyOtpEndpoint } from '../../config';
+import { moderateScale } from './utils/scalingUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -125,47 +126,60 @@ export const OtpScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 34,      // <-- extra bottom padding for scroll
+    paddingHorizontal: moderateScale(24),
+    paddingTop: moderateScale(60),
+    paddingBottom: moderateScale(34), // extra bottom padding for scroll
     backgroundColor: '#fff',
     alignItems: 'center',
   },
   headerContainer: {
     width: '100%',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: moderateScale(16),
   },
   backIcon: { position: 'absolute', left: 0 },
-  title: { textAlign: 'center', fontSize: 20, fontWeight: '500', color: 'gray' },
-  image: { width: 220, height: 220, resizeMode: 'contain', marginVertical: 48 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 8, textAlign: 'center' },
-  subheader: { fontSize: 14, color: 'gray', textAlign: 'center', marginBottom: 40 },
+  title: { textAlign: 'center', fontSize: moderateScale(20), fontWeight: '500', color: 'gray' },
+  image: { width: moderateScale(220), height: moderateScale(220), resizeMode: 'contain', marginVertical: moderateScale(48) },
+  header: { fontSize: moderateScale(22), fontWeight: 'bold', color: '#000', marginBottom: moderateScale(8), textAlign: 'center' },
+  subheader: { fontSize: moderateScale(14), color: 'gray', textAlign: 'center', marginBottom: moderateScale(40) },
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f44',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 24,
-    marginBottom: 60,
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: moderateScale(6),
+    borderRadius: moderateScale(24),
+    marginBottom: moderateScale(60),
   },
-  phone: { fontSize: 15, color: '#fff', marginRight: 8 },
-  editCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#f44', justifyContent: 'center', alignItems: 'center' },
-  otpContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '80%', marginBottom: 40 },
+  phone: { fontSize: moderateScale(15), color: '#fff', marginRight: moderateScale(8) },
+  editCircle: {
+    width: moderateScale(20),
+    height: moderateScale(20),
+    borderRadius: moderateScale(10),
+    backgroundColor: '#f44',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  otpContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '80%', marginBottom: moderateScale(40) },
   otpInput: {
-    width: 60, height: 60, borderRadius: 30, backgroundColor: '#f6f6f6', elevation: 2,
-    fontSize: 20, fontWeight: '500', color: '#000',
+    width: moderateScale(60),
+    height: moderateScale(60),
+    borderRadius: moderateScale(30),
+    backgroundColor: '#f6f6f6',
+    elevation: 2,
+    fontSize: moderateScale(20),
+    fontWeight: '500',
+    color: '#000',
   },
   submitBtn: {
     backgroundColor: '#0a7cf3',
-    width: '85%',              // responsive width
-    maxWidth: 389,
-    height: 56,
-    borderRadius: 30,
+    width: '85%', // responsive width
+    maxWidth: moderateScale(389),
+    height: moderateScale(56),
+    borderRadius: moderateScale(30),
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
   },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  submitText: { color: '#fff', fontSize: moderateScale(16), fontWeight: 'bold' },
 });

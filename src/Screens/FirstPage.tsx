@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Image, StyleSheet, StatusBar, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { moderateScale } from './utils/scalingUtils';
 
 export const FirstPage = () => {
   const navigation = useNavigation(); // Access navigation
@@ -45,35 +46,35 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: moderateScale(40),
     width: '100%',
-    paddingHorizontal: 24,
+    paddingHorizontal: moderateScale(24),
     alignItems: 'center',
   },
   quote: {
-    fontSize: 25,
+    fontSize: moderateScale(25),
     color: '#000',
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 80,
+    marginBottom: moderateScale(80),
   },
   tagline: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#000',
     textAlign: 'center',
-    marginBottom: 70,
+    marginBottom: moderateScale(70),
   },
   button: {
     backgroundColor: '#0a7cf3',
-    paddingVertical: 14,
-    borderRadius: 20,
+    paddingVertical: moderateScale(14),
+    borderRadius: moderateScale(20),
     width: '100%',
-    height:50,
+    height: moderateScale(50),
   },
   buttonText: {
     textAlign: 'center',
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
 });

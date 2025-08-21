@@ -10,6 +10,7 @@ import {
 import LottieView from 'lottie-react-native';
 import { ArrowBack, FrontTruck, TwoPersonIcon } from '../assets';
 import { useTruckStore } from '../stores/useTruckStore';
+import { moderateScale } from './utils/scalingUtils';
 
 const isValidDate = (date) => new Date(date) > new Date();
 
@@ -185,7 +186,7 @@ export const AdminTruckView = ({ overrideTrucks }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 12,
+    padding: moderateScale(24),
     backgroundColor: '#f9f9f9',
   },
   loaderContainer: {
@@ -195,90 +196,90 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   headerContainer: {
-    paddingTop: Platform.OS === 'android' ? 30 : 50,
-    paddingBottom: 12,
+    paddingTop: Platform.OS === 'android' ? moderateScale(30) : moderateScale(50),
+    paddingBottom: moderateScale(12),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     color: '#000',
   },
   headerText: {
-    fontSize: 20,
+    fontSize: moderateScale(20),
     fontWeight: 'bold',
   },
   statusContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 16,
-    gap: 20,
+    marginVertical: moderateScale(16),
+    gap: moderateScale(20),
   },
   statusCard: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 4,
+    borderRadius: moderateScale(12),
+    padding: moderateScale(12),
+    marginHorizontal: moderateScale(4),
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 1, height: 2 },
-    elevation: 2,
-    height: 100,
+    shadowOffset: { width: moderateScale(1), height: moderateScale(2) },
+    elevation: moderateScale(2),
+    height: moderateScale(100),
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: moderateScale(4),
   },
   statusTitle: {
-    marginLeft: 8,
-    fontSize: 14,
+    marginLeft: moderateScale(8),
+    fontSize: moderateScale(14),
     fontWeight: 'bold',
     color: '#000',
   },
   statusCount: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: 'bold',
     color: '#333',
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: moderateScale(12),
+    padding: moderateScale(14),
+    marginBottom: moderateScale(12),
     shadowColor: '#000',
     shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    shadowOffset: { width: 0, height: moderateScale(1) },
+    elevation: moderateScale(1),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: moderateScale(10),
   },
   truckNumber: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
-    marginLeft: 10,
+    marginLeft: moderateScale(10),
     flex: 1,
     color: '#000',
   },
   statusChip: {
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    borderRadius: moderateScale(12),
+    paddingVertical: moderateScale(4),
+    paddingHorizontal: moderateScale(10),
   },
   statusText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: moderateScale(12),
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 6,
+    marginBottom: moderateScale(6),
   },
   label: {
     fontWeight: 'bold',
-    width: 110,
+    width: moderateScale(110),
     color: '#000',
   },
 });

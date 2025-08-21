@@ -18,6 +18,7 @@ import { DashboardInfoCard } from '../Component/DashboardInfoCard';
 import { useUserStore } from '../stores/useUserStore';
 import { useTruckStore } from '../stores/useTruckStore';
 import { baseUrl } from '../../config';
+import { moderateScale } from './utils/scalingUtils';
 
 export const DashboardScreen = ({ navigation }) => {
   const user = useUserStore((state) => state.user);
@@ -311,38 +312,38 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#F9F9F9',
-    paddingTop: 42,
-    paddingBottom: 32,
+    paddingTop: moderateScale(42),
+    paddingBottom: moderateScale(32),
     alignItems: 'center',
   },
   section: {
-    marginTop: 32,
+    marginTop: moderateScale(32),
     alignItems: 'center',
   },
   cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
-    marginTop: 32,
-    paddingHorizontal: 16,
+    gap: moderateScale(16),
+    marginTop: moderateScale(32),
+    paddingHorizontal: moderateScale(16),
   },
   cardRow1: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
-    paddingHorizontal: 16,
-    marginTop: 16,
+    gap: moderateScale(16),
+    paddingHorizontal: moderateScale(16),
+    marginTop: moderateScale(16),
   },
   tableContainer: {
-    width: 450,
-    paddingHorizontal: 16,
+    width: moderateScale(450),
+    paddingHorizontal: moderateScale(16),
   },
   noDataContainer: {
-    marginTop: 32,
+    marginTop: moderateScale(32),
     alignItems: 'center',
   },
   noDataText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: '#999',
   },
 });

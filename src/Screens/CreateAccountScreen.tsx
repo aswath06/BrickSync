@@ -17,6 +17,7 @@ import {
   VerifyOtpEndpoint,
   RegisterEndpoint,
 } from '../../config';
+import { moderateScale } from './utils/scalingUtils';
 
 export const CreateAccountScreen = ({ navigation, route }) => {
   const [name, setName] = useState('');
@@ -352,48 +353,48 @@ export const CreateAccountScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    paddingBottom: 60,
+    padding: moderateScale(24),
+    paddingBottom: moderateScale(60),
   },
   title: {
-    fontSize: 24,
+    fontSize: moderateScale(24),
     fontWeight: '700',
-    marginBottom: 6,
-    marginTop: 50,
+    marginBottom: moderateScale(6),
+    marginTop: moderateScale(50),
   },
   subtitle: {
     color: 'gray',
-    marginBottom: 24,
+    marginBottom: moderateScale(24),
   },
   inputBox: {
-    marginBottom: 18,
+    marginBottom: moderateScale(18),
   },
   label: {
-    marginBottom: 12,
+    marginBottom: moderateScale(12),
     fontWeight: '500',
   },
   input: {
     backgroundColor: '#f9f9f9',
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    height: 48,
+    borderRadius: moderateScale(30),
+    paddingHorizontal: moderateScale(16),
+    height: moderateScale(48),
     borderColor: '#ddd',
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
   },
   inlineInput: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#f9f9f9',
-    borderRadius: 30,
+    borderRadius: moderateScale(30),
     borderColor: '#ddd',
-    borderWidth: 1,
-    height: 48,
-    paddingHorizontal: 16,
+    borderWidth: moderateScale(1),
+    height: moderateScale(48),
+    paddingHorizontal: moderateScale(16),
   },
   inlineTextInput: {
     flex: 1,
-    marginRight: 10,
+    marginRight: moderateScale(10),
     height: '100%',
   },
   verifyText: {
@@ -405,26 +406,26 @@ const styles = StyleSheet.create({
   },
   requestBtn: {
     backgroundColor: '#007bff',
-    height: 50,
-    borderRadius: 30,
+    height: moderateScale(50),
+    borderRadius: moderateScale(30),
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: moderateScale(16),
   },
   requestBtnText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
   warningText: {
     color: '#d6a100',
-    fontSize: 13,
-    marginTop: 6,
-    paddingLeft: 10,
+    fontSize: moderateScale(13),
+    marginTop: moderateScale(6),
+    paddingLeft: moderateScale(10),
   },
   footerText: {
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: moderateScale(20),
     color: 'gray',
   },
   createLink: {
@@ -433,8 +434,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: 'red',
-    fontSize: 13,
-    marginTop: 6,
-    paddingLeft: 10,
+    fontSize: moderateScale(13),
+    marginTop: moderateScale(6),
+    paddingLeft: moderateScale(10),
   },
 });

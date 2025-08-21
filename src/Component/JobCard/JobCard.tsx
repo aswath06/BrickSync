@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from 'react-native';
+import { moderateScale } from '../../Screens/utils/scalingUtils';
 
 type JobCardProps = {
   title?: string;
@@ -99,71 +100,71 @@ export const JobCard: React.FC<JobCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: moderateScale(12),
+    padding: moderateScale(16),
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: moderateScale(6),
     elevation: 3,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: moderateScale(12),
   },
   title: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '600',
     color: '#000',
   },
   statusContainer: {
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    borderRadius: moderateScale(6),
+    paddingVertical: moderateScale(4),
+    paddingHorizontal: moderateScale(12),
   },
   statusText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontWeight: '500',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: 6,
+    marginTop: moderateScale(6),
   },
   label: {
-    width: 130,
-    fontSize: 14,
+    width: moderateScale(130),
+    fontSize: moderateScale(14),
     fontWeight: '500',
     color: '#000',
   },
   colon: {
-    width: 10,
-    fontSize: 14,
+    width: moderateScale(10),
+    fontSize: moderateScale(14),
     fontWeight: '500',
     color: '#000',
   },
   value: {
     flex: 1,
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#555',
     fontWeight: '400',
   },
   loadItem: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#555',
     fontWeight: '400',
-    marginBottom: 2,
+    marginBottom: moderateScale(2),
   },
   button: {
-    marginTop: 16,
+    marginTop: moderateScale(16),
     backgroundColor: '#1570EF',
-    paddingVertical: 10,
-    borderRadius: 6,
+    paddingVertical: moderateScale(10),
+    borderRadius: moderateScale(6),
     alignItems: 'center',
     alignSelf: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: moderateScale(24),
   },
   disabledButton: {
     backgroundColor: '#ccc',
@@ -171,5 +172,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: moderateScale(14),
   },
 });
+

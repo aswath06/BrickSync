@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import axios from 'axios';
+import { moderateScale } from './utils/scalingUtils';
 
 export const VehicleListScreen = ({ route }) => {
   const { customerId, customerName } = route.params;
@@ -40,35 +41,36 @@ export const VehicleListScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    paddingTop: 42,
+    padding: moderateScale(16),
+    paddingTop: moderateScale(42),
     backgroundColor: '#f7f7f7',
   },
   header: {
-    fontSize: 20,
+    fontSize: moderateScale(20),
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: moderateScale(16),
     color: '#000',
     textAlign: 'center',
   },
   card: {
     backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
+    padding: moderateScale(12),
+    borderRadius: moderateScale(10),
+    marginBottom: moderateScale(12),
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: moderateScale(4),
     elevation: 2,
   },
   vehicleNumber: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#000',
   },
   text: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#444',
-    marginTop: 4,
+    marginTop: moderateScale(4),
   },
 });
+

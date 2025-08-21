@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { moderateScale } from '../../Screens/utils/scalingUtils';
 
 type MainCardProps = {
   name: string;
@@ -54,9 +55,9 @@ export const MainCard: React.FC<MainCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#0a7cf3',
-    borderRadius: 20,
-    padding: 16,
-    margin: 10,
+    borderRadius: moderateScale(20),
+    padding: moderateScale(16),
+    margin: moderateScale(10),
   },
   header: {
     flexDirection: 'row',
@@ -64,34 +65,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   name: {
-    fontSize: 19,
+    fontSize: moderateScale(19),
     fontWeight: 'bold',
     color: '#fff',
   },
   more: {
-    fontSize: 26,
+    fontSize: moderateScale(26),
     color: '#9fcaff',
   },
   company: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
-    marginVertical: 10,
+    marginVertical: moderateScale(10),
   },
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: moderateScale(12),
   },
   detail: {
     alignItems: 'center',
   },
   label: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#fff',
   },
   value: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: 'bold',
     color: '#fff',
   },

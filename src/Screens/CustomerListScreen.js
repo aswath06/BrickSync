@@ -9,6 +9,7 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
+import { moderateScale } from './utils/scalingUtils';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // 16px padding + 16px gap
@@ -63,38 +64,38 @@ export const CustomerListScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    paddingTop: 42,
+    padding: moderateScale(16),
+    paddingTop: moderateScale(42),
     backgroundColor: '#f7f7f7',
   },
   header: {
-    fontSize: 22,
+    fontSize: moderateScale(22),
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: moderateScale(16),
     textAlign: 'center',
     color: '#000',
   },
   row: {
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: moderateScale(16),
   },
   card: {
-    width: CARD_WIDTH,
+    width: CARD_WIDTH, // keep dynamic, can scale if needed
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: moderateScale(12),
+    padding: moderateScale(12),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: moderateScale(0), height: moderateScale(2) },
+    shadowRadius: moderateScale(4),
+    elevation: moderateScale(3),
   },
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
-    marginBottom: 8,
-    borderRadius: 10,
+    marginBottom: moderateScale(8),
+    borderRadius: moderateScale(10),
     overflow: 'hidden',
     position: 'relative',
   },
@@ -104,35 +105,35 @@ const styles = StyleSheet.create({
   },
   roleBanner: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: moderateScale(6),
+    right: moderateScale(6),
     backgroundColor: '#007bff',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: moderateScale(6),
+    paddingVertical: moderateScale(2),
+    borderRadius: moderateScale(6),
   },
   roleText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontWeight: 'bold',
   },
   name: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#000',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: moderateScale(4),
   },
   detail: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#444',
-    marginTop: 2,
+    marginTop: moderateScale(2),
     textAlign: 'center',
   },
   text: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: moderateScale(20),
     color: '#000',
   },
 });

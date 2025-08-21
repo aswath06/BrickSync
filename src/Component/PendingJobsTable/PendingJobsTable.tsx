@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { moderateScale } from '../../Screens/utils/scalingUtils';
 
 type Material = {
   name: string;
@@ -105,39 +106,41 @@ export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    margin: 16,
+    padding: moderateScale(16),
+    borderRadius: moderateScale(16),
+    margin: moderateScale(16),
     elevation: 2,
   },
   title: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: moderateScale(12),
     color: '#000',
   },
   tableHeader: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    paddingBottom: 8,
-    marginBottom: 8,
+    paddingBottom: moderateScale(8),
+    marginBottom: moderateScale(8),
   },
   headerCell: {
     flex: 1,
     fontWeight: '600',
     color: '#444',
+    fontSize: moderateScale(14),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 12,
+    paddingVertical: moderateScale(12),
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   cell: {
     flex: 1,
     color: '#333',
+    fontSize: moderateScale(14),
   },
   customerCell: {
     flex: 1.5,
@@ -146,10 +149,11 @@ const styles = StyleSheet.create({
   status: {
     flex: 1,
     textAlign: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    paddingVertical: moderateScale(4),
+    paddingHorizontal: moderateScale(8),
+    borderRadius: moderateScale(6),
     overflow: 'hidden',
     fontWeight: '600',
+    fontSize: moderateScale(12),
   },
 });

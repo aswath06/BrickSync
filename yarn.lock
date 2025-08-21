@@ -2997,6 +2997,7 @@ __metadata:
     react-native-safe-area-context: ^5.5.1
     react-native-screens: ^4.11.1
     react-native-share: ^12.1.1
+    react-native-size-matters: ^0.4.2
     react-native-svg: ^15.12.0
     react-native-toast-message: ^2.3.3
     react-test-renderer: 18.3.1
@@ -8354,6 +8355,15 @@ __metadata:
   version: 12.1.1
   resolution: "react-native-share@npm:12.1.1"
   checksum: 3461b2d03979cb9a7a6bf809edd9c477956829391a2ed046046624eae2fd1c3038915eb382be29badc9c526fa50afce2a405a4bf2acb19da24da672bda8bf2e7
+  languageName: node
+  linkType: hard
+
+"react-native-size-matters@npm:^0.4.2":
+  version: 0.4.2
+  resolution: "react-native-size-matters@npm:0.4.2"
+  peerDependencies:
+    react-native: "*"
+  checksum: 65dac50cad8d03bd046c62e327edf1c162c650fa3320613343bb978ca4b83c8e4e61b0f528502a154a1d4e4baa6dc296799a57737177e3d3c77b64750f5d8076
   languageName: node
   linkType: hard
 
