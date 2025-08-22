@@ -69,6 +69,7 @@ export const CustomerListScreen = ({ route, navigation }) => {
       <TextInput
         style={styles.searchInput}
         placeholder="Search by name, phone, or email"
+        placeholderTextColor='#666'
         value={searchQuery}
         onChangeText={setSearchQuery}
         clearButtonMode="while-editing"

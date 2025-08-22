@@ -9,6 +9,7 @@ import {
   TextInput,
   StatusBar,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -35,8 +36,14 @@ export const RefuelHistory = () => {
   const [kilometer, setKilometer] = useState('');
   const [date, setDate] = useState(new Date());
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleAddRefuel = async () => {
+    if (!amount || !volume || !kilometer) {
+      alert('Please fill all fields.');
+      return;
+    }
+
     const newEntry = {
       amount: parseFloat(amount),
       volume: parseFloat(volume),
@@ -44,6 +51,7 @@ export const RefuelHistory = () => {
       date: date.toISOString(),
     };
 
+    setLoading(true);
     try {
       await axios.post(
         `${baseUrl}${AddRefuelToVehicleEndpoint(truck.id)}`,
@@ -71,22 +79,19 @@ export const RefuelHistory = () => {
     } catch (error) {
       console.error('❌ Failed to add refuel entry:', error);
       alert('Failed to submit refuel. Try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const calculateAverageMileage = () => {
-  if (history.length < 2) return '-';
-
-  const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const totalDistance = sorted[sorted.length - 1].kilometer - sorted[0].kilometer;
-  const totalVolume = sorted.reduce((sum, r) => sum + (r.volume || 0), 0);
-
-  if (totalVolume === 0) return '-';
-
-  return `${(totalDistance / totalVolume).toFixed(2)} km/l`;
-};
-
-
+    if (history.length < 2) return '-';
+    const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const totalDistance = sorted[sorted.length - 1].kilometer - sorted[0].kilometer;
+    const totalVolume = sorted.reduce((sum, r) => sum + (r.volume || 0), 0);
+    if (totalVolume === 0) return '-';
+    return `${(totalDistance / totalVolume).toFixed(2)} km/l`;
+  };
 
   const formatDate = (isoDate) => {
     const date = new Date(isoDate);
@@ -150,6 +155,7 @@ export const RefuelHistory = () => {
               onChangeText={setAmount}
               keyboardType="numeric"
               style={styles.input}
+              placeholderTextColor="#666"
             />
             <TextInput
               placeholder="Volume in Litres"
@@ -157,6 +163,7 @@ export const RefuelHistory = () => {
               onChangeText={setVolume}
               keyboardType="numeric"
               style={styles.input}
+              placeholderTextColor="#666"
             />
             <TextInput
               placeholder="Kilometer"
@@ -164,6 +171,7 @@ export const RefuelHistory = () => {
               onChangeText={setKilometer}
               keyboardType="numeric"
               style={styles.input}
+              placeholderTextColor="#666"
             />
 
             <TouchableOpacity
@@ -183,9 +191,27 @@ export const RefuelHistory = () => {
               onCancel={() => setDatePickerVisible(false)}
             />
 
-            <TouchableOpacity style={styles.addBtn} onPress={handleAddRefuel}>
-              <Text style={styles.addBtnText}>Submit</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.addBtn, { flex: 1, marginRight: 8 }]}
+                onPress={handleAddRefuel}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.addBtnText}>Submit</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.cancelBtn, { flex: 1, marginLeft: 8 }]}
+                onPress={() => setModalVisible(false)}
+                disabled={loading}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -243,7 +269,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: moderateScale(14),
-    color: '#333',
+    color: '#000',
     marginBottom: moderateScale(2),
   },
   fab: {
@@ -287,6 +313,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(10),
     marginBottom: moderateScale(10),
     fontSize: moderateScale(14),
+    color: '#000',
   },
   uploadBtn: {
     padding: moderateScale(10),
@@ -295,14 +322,29 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(10),
     alignItems: 'center',
   },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: moderateScale(16),
+  },
   addBtn: {
     backgroundColor: '#1577EA',
     paddingVertical: moderateScale(12),
     borderRadius: moderateScale(10),
-    marginTop: moderateScale(16),
     alignItems: 'center',
   },
   addBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: moderateScale(14),
+  },
+  cancelBtn: {
+    backgroundColor: '#F44336',
+    paddingVertical: moderateScale(12),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+  },
+  cancelBtnText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: moderateScale(14),

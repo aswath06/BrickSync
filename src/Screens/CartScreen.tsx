@@ -10,8 +10,8 @@ import {
   Alert,
   Modal,
   TextInput,
-  ActivityIndicator,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { ArrowBack } from '../assets';
 import { useProductStore } from '../stores/useProductStore';
 import { useAllUsersStore } from '../stores/useAllUsersStore';
@@ -71,8 +71,6 @@ export const CartScreen = ({ navigation, route }) => {
       if (response.status === 200 || response.status === 201) {
         clearCart();
         setTransportCharge('0');
-
-        // Navigate to BillScreen with order details
         navigation.navigate('BillScreen', { order: orderPayload });
       } else {
         Alert.alert('Error', 'Order could not be placed. Try again.');
@@ -110,7 +108,7 @@ export const CartScreen = ({ navigation, route }) => {
     setEditModalVisible(false);
   };
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item }) => (
     <View style={styles.card}>
       <View style={{ position: 'relative' }}>
         <Image source={{ uri: item.product.imageUrl }} style={styles.image} resizeMode="contain" />
@@ -212,11 +210,7 @@ export const CartScreen = ({ navigation, route }) => {
             onPress={handleCheckout}
             disabled={loading}
           >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.checkoutText}>Proceed to Checkout</Text>
-            )}
+            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
@@ -255,6 +249,18 @@ export const CartScreen = ({ navigation, route }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Lottie Loading Overlay */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <LottieView
+            source={require('../assets/lottie/AddToCartSuccess.json')}
+            autoPlay
+            loop
+            style={{ width: 150, height: 150 }}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -280,7 +286,7 @@ const styles = StyleSheet.create({
   summaryContainer: { backgroundColor: '#fff', borderTopWidth: moderateScale(1), borderTopColor: '#ddd', paddingVertical: moderateScale(12), paddingHorizontal: moderateScale(16), flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(10) },
   totalLabel: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#333' },
   totalValue: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#1577EA' },
-  transportInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(6), fontSize: moderateScale(14), marginTop: moderateScale(4) },
+  transportInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(6), fontSize: moderateScale(14), marginTop: moderateScale(4), color: '#000' },
   checkoutButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(14), borderRadius: moderateScale(12), alignItems: 'center', marginTop: moderateScale(12) },
   checkoutText: { color: '#fff', fontWeight: '600', fontSize: moderateScale(16) },
   clearButton: { backgroundColor: '#E53935', paddingVertical: moderateScale(12), borderRadius: moderateScale(12), alignItems: 'center', marginTop: moderateScale(10) },
@@ -291,4 +297,15 @@ const styles = StyleSheet.create({
   modalInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(8), marginBottom: moderateScale(12) },
   saveButton: { backgroundColor: '#4CAF50', padding: moderateScale(10), borderRadius: moderateScale(8), flex: 1, marginRight: moderateScale(8), alignItems: 'center' },
   cancelButton: { backgroundColor: '#F44336', padding: moderateScale(10), borderRadius: moderateScale(8), flex: 1, marginLeft: moderateScale(8), alignItems: 'center' },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
 });
