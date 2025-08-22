@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { ArrowBack, BagIcon } from '../assets';
+import { ArrowBack, BagIcon, FrontTruck } from '../assets';
 import { SearchIcon } from '../assets/icons/SearchIcon';
 import { getToken } from '../services/authStorage';
 import { baseUrl } from '../../config';
@@ -132,14 +132,29 @@ export const Orders = ({ navigation }: any) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowBack width={24} height={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Place Your Order</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.bagIconWrapper}>
-          <BagIcon width={48} height={48} />
-        </TouchableOpacity>
-      </View>
+  <TouchableOpacity onPress={() => navigation.goBack()}>
+    <ArrowBack width={24} height={24} color="#000" />
+  </TouchableOpacity>
+  <Text style={styles.title}>Place Your Order</Text>
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.bagIconWrapper}>
+      <BagIcon width={48} height={48} />
+    </TouchableOpacity>
+{/* Only show FrontTruck for admin */}
+{userRole === 1 && (
+  <TouchableOpacity
+    onPress={() => navigation.navigate('TodaySummary')}
+    style={styles.truckIconWrapper}
+  >
+    <FrontTruck width={25} height={25} />
+  </TouchableOpacity>
+)}
+
+
+
+  </View>
+</View>
+
 
       {/* Search */}
       <View style={styles.searchBox}>
@@ -394,4 +409,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
+  truckIconWrapper: {
+  width: moderateScale(40),
+  height: moderateScale(40),
+  borderRadius: moderateScale(24), // makes it a circle
+  backgroundColor: '#1577EA', // circle background color
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginLeft: moderateScale(12),
+  elevation: moderateScale(4), // optional: shadow on Android
+},
+
 });
