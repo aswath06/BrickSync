@@ -7,21 +7,31 @@ import {
   ScrollView,
   Modal,
   FlatList,
-  Alert,
+  ActivityIndicator,
+  Platform,
+  ToastAndroid,
 } from 'react-native';
 import { useTruckStore } from '../stores/useTruckStore';
 import { baseUrl } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
+import Toast from 'react-native-toast-message'; // If using react-native-toast-message
 
 export const AssignJobScreen = ({ route, navigation }) => {
   const { orderId, jobId, customerName, orderTime, materials, vehicleNumber } = route.params;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(vehicleNumber);
+  const [loading, setLoading] = useState(false);
   const { trucks, fetchAllTrucks } = useTruckStore();
 
   // Assign job to vehicle
   const handleAssign = async () => {
+    if (!selectedVehicle) {
+      showToast('Please select a vehicle');
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await fetch(`${baseUrl}/api/orders/${orderId}/assign`, {
         method: 'PUT',
@@ -31,20 +41,32 @@ export const AssignJobScreen = ({ route, navigation }) => {
 
       if (response.ok) {
         console.log('Assignment successful');
-        Alert.alert('Success', 'Job assigned successfully');
+        showToast('Job assigned successfully');
+        navigation.navigate('DashboardScreen');
       } else {
         const errorData = await response.json();
         console.error('Assignment failed:', errorData);
-        Alert.alert('Error', errorData?.message || 'Assignment failed');
+        showToast(errorData?.message || 'Assignment failed');
       }
     } catch (error) {
       console.error('Network error:', error);
-      Alert.alert('Error', 'Network error occurred');
+      showToast('Network error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showToast = (message) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, ToastAndroid.SHORT);
+    } else {
+      Toast.show({ type: 'success', text1: message });
     }
   };
 
   // Delete job
   const handleDelete = async () => {
+    setLoading(true);
     try {
       const response = await fetch(`${baseUrl}/api/orders/${orderId}`, {
         method: 'DELETE',
@@ -52,24 +74,16 @@ export const AssignJobScreen = ({ route, navigation }) => {
       });
 
       if (response.ok) {
-        console.log('Job deleted successfully');
-        Alert.alert('Success', 'Job deleted successfully', [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Navigate to Dashboard screen
-              navigation.navigate('DashboardScreen');
-            },
-          },
-        ]);
+        showToast('Job deleted successfully');
+        navigation.navigate('DashboardScreen');
       } else {
         const errorData = await response.json();
-        console.error('Delete failed:', errorData);
-        Alert.alert('Error', errorData?.message || 'Failed to delete job');
+        showToast(errorData?.message || 'Failed to delete job');
       }
     } catch (error) {
-      console.error('Network error:', error);
-      Alert.alert('Error', 'Network error occurred while deleting job');
+      showToast('Network error occurred while deleting job');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,7 +93,6 @@ export const AssignJobScreen = ({ route, navigation }) => {
     setModalVisible(true);
   };
 
-  // Select vehicle from modal
   const handleSelectVehicle = (vehicleNo) => {
     setSelectedVehicle(vehicleNo);
     setModalVisible(false);
@@ -89,16 +102,12 @@ export const AssignJobScreen = ({ route, navigation }) => {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>Assigned Job Details</Text>
-
         <Text style={styles.label}>Order Id:</Text>
         <Text style={styles.value}>{orderId}</Text>
-
         <Text style={styles.label}>Job ID:</Text>
         <Text style={styles.value}>{jobId}</Text>
-
         <Text style={styles.label}>Customer Name:</Text>
         <Text style={styles.value}>{customerName}</Text>
-
         <Text style={styles.label}>Order Time:</Text>
         <Text style={styles.value}>{orderTime}</Text>
 
@@ -126,15 +135,23 @@ export const AssignJobScreen = ({ route, navigation }) => {
 
       {/* Buttons */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.assignButton} onPress={handleAssign}>
-          <Text style={styles.buttonText}>Assign Job</Text>
+        <TouchableOpacity
+          style={[styles.assignButton, loading && { opacity: 0.6 }]}
+          onPress={handleAssign}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Assign Job</Text>}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.buttonText}>Delete Job</Text>
+        <TouchableOpacity
+          style={[styles.deleteButton, loading && { opacity: 0.6 }]}
+          onPress={handleDelete}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Delete Job</Text>}
         </TouchableOpacity>
       </View>
 
-      {/* Vehicle Selection Modal */}
+      {/* Vehicle Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -160,9 +177,12 @@ export const AssignJobScreen = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {Platform.OS === 'ios' && <Toast />}
     </View>
   );
 };
+
 
 // Styles
 const styles = StyleSheet.create({
