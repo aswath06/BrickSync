@@ -29,6 +29,7 @@ type ProductStore = {
   setProducts: (products: Product[]) => void;
   getProductById: (id: string) => Product | undefined;
   addToCart: (item: CartItem) => void;
+  updateCartItem: (productId: string, newQuantity: number, newPrice: number) => void;
   clearCart: () => void;
 };
 
@@ -38,8 +39,11 @@ export const useProductStore = create<ProductStore>()(
     (set, get) => ({
       products: [], // will be filled via API or manually
       cart: [],
+
       setProducts: (products) => set({ products }),
+
       getProductById: (id) => get().products.find((p) => p.id === id),
+
       addToCart: (item) => {
         const currentCart = get().cart;
         const existsIndex = currentCart.findIndex(
@@ -61,6 +65,23 @@ export const useProductStore = create<ProductStore>()(
           set({ cart: [...currentCart, item] });
         }
       },
+
+      // ✅ Update cart item (quantity + price)
+      updateCartItem: (productId, newQuantity, newPrice) => {
+        const updatedCart = get().cart.map((item) => {
+          if (item.product.id === productId) {
+            return {
+              ...item,
+              quantity: newQuantity,
+              product: { ...item.product, price: newPrice.toString() },
+              total: newQuantity * newPrice,
+            };
+          }
+          return item;
+        });
+        set({ cart: updatedCart });
+      },
+
       clearCart: () => set({ cart: [] }),
     }),
     {
