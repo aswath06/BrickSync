@@ -19,9 +19,10 @@ export const LoginScreen = ({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState<'email' | 'phone'>('phone');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isValid, setIsValid] = useState(false);
-  const [isVerified, setIsVerified] = useState(true); // ✅ Phone is verified by default
+  const [isVerified, setIsVerified] = useState(true); // Phone verified by default
   const [verifying, setVerifying] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const setUser = useUserStore((state) => state.setUser);
@@ -29,43 +30,34 @@ export const LoginScreen = ({ navigation, route }) => {
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
     setPhone(filtered);
-    if (!route?.params?.verified) setIsVerified(true); // Phone stays verified
+    setIsVerified(true); // Phone is verified by default
   };
 
   const handleVerify = async () => {
-    if (activeTab === 'email') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError('Enter a valid email address.');
-        return;
-      }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Enter a valid email address.');
+      return;
     }
-
-    const contact = activeTab === 'phone' ? phone : email;
-    const field = activeTab === 'phone' ? 'phone' : 'email';
-    const endpoint = activeTab === 'phone' ? SendOtpWhatsappEndpoint : SendOtpEndpoint;
 
     try {
       setVerifying(true);
-      const response = await fetch(`${baseUrl}${endpoint}`, {
+      const response = await fetch(`${baseUrl}${SendOtpEndpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: contact }),
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         setError(data.message || 'Failed to send OTP');
         return;
       }
 
       setError('');
-      if (activeTab === 'email') {
-        navigation.navigate('Otp', { contact, type: activeTab, source: 'login' });
-      }
-    } catch (error) {
-      console.error('OTP send error:', error);
+      navigation.navigate('Otp', { contact: email, type: 'email', source: 'login' });
+    } catch (err) {
+      console.error('OTP send error:', err);
       setError('Network error while sending OTP');
     } finally {
       setVerifying(false);
@@ -73,23 +65,29 @@ export const LoginScreen = ({ navigation, route }) => {
   };
 
   const getUserAndToken = async () => {
-    const contact = activeTab === 'phone' ? phone : email;
-    const queryParam = activeTab === 'phone' ? `phone=${contact}` : `email=${contact}`;
-    const endpoint = `${baseUrl}/api/users/by-${activeTab}?${queryParam}`;
-
     try {
-      const res = await fetch(endpoint);
+      let res;
+      if (activeTab === 'phone') {
+        res = await fetch(`${baseUrl}/api/users/by-phone`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password }),
+        });
+      } else {
+        res = await fetch(`${baseUrl}/api/users/by-email?email=${email}`);
+      }
+
       const data = await res.json();
 
       if (!res.ok || !data.exists) {
-        setError('User not found');
+        setError(data.message || 'User not found or invalid credentials');
         return null;
       }
 
       const { token, user } = data;
       await storeToken(token);
       console.log('✅ JWT Token:', token);
-      console.log('✅ Full User:', user); // ← Full user object
+      console.log('✅ Full User:', user);
       return { token, user };
     } catch (err) {
       console.error('User fetch error:', err);
@@ -109,7 +107,7 @@ export const LoginScreen = ({ navigation, route }) => {
       const { type, contact } = route.params || {};
       if (type === 'phone') {
         setPhone(contact || '');
-        setIsVerified(true); // ✅ Phone verified by default
+        setIsVerified(true);
       } else if (type === 'email') {
         setEmail(contact || '');
         setIsVerified(false);
@@ -119,13 +117,13 @@ export const LoginScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     if (activeTab === 'phone') {
-      setIsValid(phone.length === 10);
-      setIsVerified(true); // Phone stays verified
+      setIsValid(phone.length === 10 && password.length >= 4);
+      setIsVerified(true);
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       setIsValid(emailRegex.test(email));
     }
-  }, [phone, email, activeTab]);
+  }, [phone, email, password, activeTab]);
 
   return (
     <View style={styles.container}>
@@ -138,7 +136,7 @@ export const LoginScreen = ({ navigation, route }) => {
           onPress={() => {
             setActiveTab('email');
             setError('');
-            setIsVerified(false); // Email must verify
+            setIsVerified(false);
           }}
         >
           <Text style={[styles.tabText, activeTab === 'email' && styles.activeTabText]}>
@@ -151,7 +149,7 @@ export const LoginScreen = ({ navigation, route }) => {
           onPress={() => {
             setActiveTab('phone');
             setError('');
-            setIsVerified(true); // Phone verified by default
+            setIsVerified(true);
           }}
         >
           <Text style={[styles.tabText, activeTab === 'phone' && styles.activeTabText]}>
@@ -160,38 +158,51 @@ export const LoginScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
 
+      {/* Phone login */}
       {activeTab === 'phone' && (
         <View style={{ marginTop: 20, width: '100%' }}>
           <Text style={styles.label}>Phone no..</Text>
           <View style={styles.inputWrapper}>
             <TextInput
               placeholder="Enter your phone number"
-              placeholderTextColor="#888" 
+              placeholderTextColor="#888"
               style={styles.input}
               keyboardType="number-pad"
               maxLength={10}
               value={phone}
               onChangeText={handlePhoneChange}
             />
-            <Text style={styles.verifyTextInline}>Verified</Text> 
+          </View>
+
+          <Text style={[styles.label, { marginTop: 15 }]}>Password</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              placeholder="Enter your password"
+              placeholderTextColor="#888"
+              style={styles.input}
+              secureTextEntry
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+            />
           </View>
           {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
       )}
 
+      {/* Email login */}
       {activeTab === 'email' && (
         <View style={{ marginTop: 20, width: '100%' }}>
           <Text style={styles.label}>Email</Text>
           <View style={styles.inputWrapper}>
             <TextInput
               placeholder="Enter your email"
-              placeholderTextColor="#888" 
+              placeholderTextColor="#888"
               style={styles.input}
               keyboardType="email-address"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                setIsVerified(false); // Email needs verification
+                setIsVerified(false);
               }}
             />
             {isVerified ? (
@@ -212,6 +223,7 @@ export const LoginScreen = ({ navigation, route }) => {
         </View>
       )}
 
+      {/* Login button */}
       <TouchableOpacity
         style={[
           styles.otpButton,
@@ -238,6 +250,7 @@ export const LoginScreen = ({ navigation, route }) => {
           <Text style={styles.otpButtonText}>Login</Text>
         )}
       </TouchableOpacity>
+
       <View style={styles.dividerContainer}>
         <View style={styles.divider} />
         <Text style={styles.dividerText}>Sign in with Google</Text>
