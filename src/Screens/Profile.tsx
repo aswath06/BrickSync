@@ -97,6 +97,7 @@ export const Profile = () => {
           username: item.name,
           phoneNumber: item.phone,
           userId: item.userid,
+          userrole: item.userrole,
         })
       }
     >

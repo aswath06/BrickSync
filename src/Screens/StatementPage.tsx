@@ -42,6 +42,7 @@ type Props = {
       username: string;
       phoneNumber: string;
       userId: string;
+      userrole: number;
     };
   };
 };
@@ -49,7 +50,12 @@ type Props = {
 const PAGE_SIZE = 10;
 
 export const StatementPage: React.FC<Props> = ({ route }) => {
-  const { statements, balance, username, phoneNumber, userId } = route.params;
+  const { statements, balance, username, phoneNumber, userId, userrole } = route.params;
+
+  // Log userrole
+  useEffect(() => {
+    console.log('User Role:', userrole);
+  }, []);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
@@ -60,12 +66,11 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
+  const [submitting, setSubmitting] = useState(false);
 
   const [orderModalVisible, setOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Statement | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
 
   // Initialize statements
   useEffect(() => {
@@ -113,53 +118,52 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
 
   // Add received statement
   const handleAddStatement = async () => {
-  if (!amount || isNaN(Number(amount))) {
-    Alert.alert('Invalid', 'Please enter a valid amount');
-    return;
-  }
+    if (!amount || isNaN(Number(amount))) {
+      Alert.alert('Invalid', 'Please enter a valid amount');
+      return;
+    }
 
-  setSubmitting(true); // start loading
-  try {
-    const payload = {
-      amount: parseFloat(amount),
-      modeOfPayment: 'Received',
-      typeOfPayment,
-    };
+    setSubmitting(true);
+    try {
+      const payload = {
+        amount: parseFloat(amount),
+        modeOfPayment: 'Received',
+        typeOfPayment,
+      };
 
-    const res = await fetch(`${baseUrl}/api/users/add-statement/${userId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch(`${baseUrl}/api/users/add-statement/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await res.text());
 
-    const newStatement: Statement = {
-      date: new Date().toISOString(),
-      amount: payload.amount,
-      modeOfPayment: payload.modeOfPayment,
-      typeOfPayment: payload.typeOfPayment,
-    };
+      const newStatement: Statement = {
+        date: new Date().toISOString(),
+        amount: payload.amount,
+        modeOfPayment: payload.modeOfPayment,
+        typeOfPayment: payload.typeOfPayment,
+      };
 
-    setVisibleStatements(prev => [newStatement, ...prev]);
-    applyFilter();
+      setVisibleStatements(prev => [newStatement, ...prev]);
+      applyFilter();
 
-    setAmount('');
-    setModalVisible(false);
-    Alert.alert('Success', 'Statement added!');
-  } catch (err: any) {
-    Alert.alert('Error', err.message || 'Something went wrong');
-  } finally {
-    setSubmitting(false); // stop loading
-  }
-};
-
+      setAmount('');
+      setModalVisible(false);
+      Alert.alert('Success', 'Statement added!');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Something went wrong');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Apply search and sort
   const applyFilter = () => {
     const data = [...visibleStatements];
     const filtered = data.filter(
-      (item) =>
+      item =>
         item.typeOfPayment?.toLowerCase().includes(searchText.toLowerCase()) ||
         item.modeOfPayment.toLowerCase().includes(searchText.toLowerCase())
     );
@@ -186,7 +190,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
 
       const rows = [
         ['Date', 'Mode', 'Order ID / Type', 'Amount'],
-        ...data.map((s) => [
+        ...data.map(s => [
           new Date(s.date).toLocaleString(),
           s.modeOfPayment,
           s.modeOfPayment === 'Received' ? s.typeOfPayment ?? '-' : s.orderId ?? '-',
@@ -194,7 +198,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
         ]),
       ];
 
-      const csvContent = rows.map((r) => r.join(',')).join('\n');
+      const csvContent = rows.map(r => r.join(',')).join('\n');
       const fileName = 'statement_export.csv';
       const path = `${RNFS.DocumentDirectoryPath}/${fileName}`;
       await RNFS.writeFile(path, csvContent, 'utf8');
@@ -276,14 +280,27 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       <Text style={styles.pageTitle}>Statement</Text>
 
       <View style={styles.userInfoRow}>
-        <View>
-          <Text style={styles.userName}>{username}</Text>
-          <Text style={styles.userPhone}>{phoneNumber}</Text>
-        </View>
-        <TouchableOpacity style={styles.actionButton} onPress={() => setModalVisible(true)}>
-          <Text style={styles.buttonText}>Add</Text>
-        </TouchableOpacity>
-      </View>
+  <View>
+    <Text style={styles.userName}>{username}</Text>
+    <Text style={styles.userPhone}>{phoneNumber}</Text>
+  </View>
+
+  <View style={{ flexDirection: 'row', gap: moderateScale(8) }}>
+    <TouchableOpacity style={styles.actionButton} onPress={() => setModalVisible(true)}>
+      <Text style={styles.buttonText}>Add</Text>
+    </TouchableOpacity>
+
+    {userrole === 2 && (
+      <TouchableOpacity
+        style={[styles.actionButton, { backgroundColor: '#28a745' }]}
+        onPress={() => Alert.alert('Advance', 'This is a role 2 specific action')}
+      >
+        <Text style={styles.buttonText}>Advance</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+</View>
+
 
       <Text style={styles.balanceText}>Balance: ₹{balance}</Text>
 
@@ -350,27 +367,26 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
             </View>
 
             <View style={styles.modalButtonsTall}>
-  <TouchableOpacity
-    style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]}
-    onPress={handleAddStatement}
-    disabled={submitting} // prevent multiple clicks
-  >
-    {submitting ? (
-      <ActivityIndicator size="small" color="#fff" />
-    ) : (
-      <Text style={styles.modalButtonText}>Submit</Text>
-    )}
-  </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]}
+                onPress={handleAddStatement}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>Submit</Text>
+                )}
+              </TouchableOpacity>
 
-  <TouchableOpacity
-    style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]}
-    onPress={() => setModalVisible(false)}
-    disabled={submitting} // prevent closing while submitting if you want
-  >
-    <Text style={styles.modalButtonText}>Cancel</Text>
-  </TouchableOpacity>
-</View>
-
+              <TouchableOpacity
+                style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]}
+                onPress={() => setModalVisible(false)}
+                disabled={submitting}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -453,62 +469,23 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(6), paddingHorizontal: moderateScale(12), paddingVertical: moderateScale(8), marginBottom: moderateScale(12) },
   headerRow: { flexDirection: 'row', backgroundColor: '#eaeaea', paddingVertical: moderateScale(8), borderBottomWidth: 1, borderColor: '#ccc' },
   headerCell: { flex: 1, fontWeight: 'bold', textAlign: 'center', fontSize: moderateScale(13) },
-  row: {
-    flexDirection: 'row',
-    paddingVertical: moderateScale(8),
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    alignItems: 'center',
-  },
-  cell: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: moderateScale(13),
-    color: '#333',
-    flexShrink: 1,
-  },
+  row: { flexDirection: 'row', paddingVertical: moderateScale(8), borderBottomWidth: 1, borderColor: '#f0f0f0', alignItems: 'center' },
+  cell: { flex: 1, textAlign: 'center', fontSize: moderateScale(13), color: '#333', flexShrink: 1 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   modalContentTall: { width: '90%', backgroundColor: '#ffe4e1', borderRadius: moderateScale(12), padding: moderateScale(25), elevation: 8, maxHeight: '80%', justifyContent: 'center' },
   modalTitleColorful: { fontSize: moderateScale(20), fontWeight: 'bold', marginBottom: moderateScale(16), textAlign: 'center', color: '#d6336c' },
   modalButtonsTall: { flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(16) },
-  modalButtonTall: { flex: 1, paddingVertical: moderateScale(14), marginHorizontal: moderateScale(6), borderRadius: moderateScale(8) },
-  modalButtonText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
-  sortRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: moderateScale(12) },
-  sortButton: { fontSize: moderateScale(14), color: '#007bff', fontWeight: '600', marginRight: moderateScale(12) },
-  activeSort: { textDecorationLine: 'underline', color: '#d6336c' },
-  exportText: { color: '#28a745', fontWeight: '600' },
-  pickerContainerColorful: { borderWidth: 1, borderColor: '#007bff', borderRadius: moderateScale(6), marginBottom: moderateScale(12) },
-  orderImage: { width: '100%', height: moderateScale(180), marginTop: 10, borderRadius: moderateScale(8) },
-  modalContentOrder: {
-    width: '90%',
-    backgroundColor: '#fff',
-    borderRadius: moderateScale(12),
-    padding: moderateScale(20),
-    elevation: 8,
-    alignSelf: 'center',
-  },
-  orderTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: 'bold',
-    marginBottom: moderateScale(12),
-    textAlign: 'center',
-    color: '#d6336c',
-  },
-  orderText: {
-    fontSize: moderateScale(14),
-    color: '#333',
-    marginBottom: moderateScale(4),
-  },
-  closeOrderButton: {
-    backgroundColor: '#dc3545',
-    paddingVertical: moderateScale(14),
-    borderRadius: moderateScale(8),
-    marginTop: moderateScale(16),
-  },
-  closeOrderButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: moderateScale(16),
-  },
+  modalButtonTall: { paddingVertical: moderateScale(10), paddingHorizontal: moderateScale(20), borderRadius: moderateScale(8), flex: 1, marginHorizontal: moderateScale(4) },
+  modalButtonText: { color: '#fff', fontWeight: '600', textAlign: 'center', fontSize: moderateScale(14) },
+  pickerContainerColorful: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginBottom: 12, overflow: 'hidden' },
+  sortRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: moderateScale(10) },
+  sortButton: { fontSize: moderateScale(14), color: '#555', fontWeight: '500' },
+  activeSort: { color: '#007bff', fontWeight: '700', textDecorationLine: 'underline' },
+  exportText: { color: '#28a745', fontWeight: '700', fontSize: moderateScale(14) },
+  modalContentOrder: { width: '90%', backgroundColor: '#fff', borderRadius: moderateScale(12), padding: moderateScale(20), maxHeight: '85%' },
+  orderTitle: { fontSize: moderateScale(18), fontWeight: 'bold', textAlign: 'center', marginBottom: moderateScale(12), color: '#007bff' },
+  orderText: { fontSize: moderateScale(14), marginVertical: moderateScale(2), color: '#333' },
+  orderImage: { width: '100%', height: 200, marginVertical: 10, borderRadius: 6 },
+  closeOrderButton: { marginTop: 12, backgroundColor: '#dc3545', paddingVertical: 10, borderRadius: 8 },
+  closeOrderButtonText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
 });
