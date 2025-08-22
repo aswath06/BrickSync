@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Animated,
-  Easing,
   Dimensions,
   ScrollView,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { ArrowBack } from '../assets';
 import { useProductStore } from '../stores/useProductStore';
 import { moderateScale } from './utils/scalingUtils';
@@ -20,11 +19,11 @@ const { height } = Dimensions.get('window');
 export const ProductDetails = ({ route, navigation }: any) => {
   const { productId, product: passedProduct } = route.params || {};
 
-  // Load product either from params or Zustand store by id
   const product =
     passedProduct || useProductStore.getState().getProductById(productId);
 
-  // Fallback UI if product not found
+  const [showLottie, setShowLottie] = useState(false);
+
   if (!product) {
     return (
       <View style={styles.center}>
@@ -39,7 +38,6 @@ export const ProductDetails = ({ route, navigation }: any) => {
   const isTypeSelectable = !!product.typeOptions;
   const isSandCategory = product.category === 'Sand';
 
-  // Safe type and size arrays
   const types: string[] = Array.isArray(product.availableSizes)
     ? product.availableSizes
     : [];
@@ -61,9 +59,6 @@ export const ProductDetails = ({ route, navigation }: any) => {
   const description = product.description ?? 'No description available.';
   const unitPrice = parseInt(product.price?.replace(/[^\d]/g, '') || '0', 10);
 
-  const animScale = useRef(new Animated.Value(1)).current;
-  const animTranslateY = useRef(new Animated.Value(0)).current;
-
   const handleAddToCart = () => {
     const qty = Number(quantity);
     if (!qty || qty <= 0) {
@@ -73,7 +68,6 @@ export const ProductDetails = ({ route, navigation }: any) => {
 
     const total = qty * unitPrice;
 
-    // Add to Zustand cart store
     useProductStore.getState().addToCart({
       product,
       selectedType,
@@ -82,24 +76,8 @@ export const ProductDetails = ({ route, navigation }: any) => {
       total,
     });
 
-    // Animation
-    Animated.parallel([
-      Animated.timing(animScale, {
-        toValue: 0.1,
-        duration: 700,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.ease),
-      }),
-      Animated.timing(animTranslateY, {
-        toValue: height / 2,
-        duration: 700,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-    ]).start(() => {
-      animScale.setValue(1);
-      animTranslateY.setValue(0);
-    });
+    setShowLottie(true);
+    setTimeout(() => setShowLottie(false), 1500);
   };
 
   useEffect(() => {
@@ -122,12 +100,27 @@ export const ProductDetails = ({ route, navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      {/* Animated Content */}
-      <Animated.View
-        style={{
-          flex: 1,
-          transform: [{ scale: animScale }, { translateY: animTranslateY }],
-        }}
+      {/* Full-screen Lottie overlay */}
+      {showLottie && (
+        <View style={styles.fullScreenLottie}>
+          <ScrollView
+            contentContainerStyle={styles.lottieScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <LottieView
+              source={require('../assets/lottie/ShoppingCart.json')}
+              autoPlay
+              loop={false}
+              style={styles.lottieStyle}
+            />
+          </ScrollView>
+        </View>
+      )}
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        nestedScrollEnabled
       >
         <Image
           source={{ uri: product.imageUrl }}
@@ -135,105 +128,98 @@ export const ProductDetails = ({ route, navigation }: any) => {
           resizeMode="contain"
         />
 
-        {/* Bottom Sheet */}
         <View style={styles.bottomSheet}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 40 }}
-            nestedScrollEnabled
-          >
-            <View style={styles.dragHandle} />
-            <Text style={styles.productName}>{product.name}</Text>
-            <Text style={styles.price}>{product.price}</Text>
-            <Text style={styles.descriptionLabel}>Description</Text>
-            <Text style={styles.details}>{description}</Text>
+          <View style={styles.dragHandle} />
+          <Text style={styles.productName}>{product.name}</Text>
+          <Text style={styles.price}>{product.price}</Text>
+          <Text style={styles.descriptionLabel}>Description</Text>
+          <Text style={styles.details}>{description}</Text>
 
-            {/* Type Selector */}
-            {isTypeSelectable && (
-              <>
-                <Text style={styles.chooseSize}>Choose Type</Text>
-                <View style={styles.sizeRow}>
-                  {types.map((type: string) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[
-                        styles.sizeButton,
-                        selectedType === type && styles.sizeButtonActive,
-                      ]}
-                      onPress={() => setSelectedType(type)}
+          {/* Type Selector */}
+          {isTypeSelectable && (
+            <>
+              <Text style={styles.chooseSize}>Choose Type</Text>
+              <View style={styles.sizeRow}>
+                {types.map((type: string) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.sizeButton,
+                      selectedType === type && styles.sizeButtonActive,
+                    ]}
+                    onPress={() => setSelectedType(type)}
+                  >
+                    <Text
+                      style={
+                        selectedType === type
+                          ? styles.sizeTextActive
+                          : styles.sizeText
+                      }
                     >
-                      <Text
-                        style={
-                          selectedType === type
-                            ? styles.sizeTextActive
-                            : styles.sizeText
-                        }
-                      >
-                        {type}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
-            {/* Size Selector */}
-            {!isSandCategory && sizes.length > 0 && (
-              <>
-                <Text style={styles.chooseSize}>Choose Size</Text>
-                <View style={styles.sizeRow}>
-                  {sizes.map((size: string) => (
-                    <TouchableOpacity
-                      key={size}
-                      style={[
-                        styles.sizeButton,
-                        selectedSize === size && styles.sizeButtonActive,
-                      ]}
-                      onPress={() => setSelectedSize(size)}
+          {/* Size Selector */}
+          {!isSandCategory && sizes.length > 0 && (
+            <>
+              <Text style={styles.chooseSize}>Choose Size</Text>
+              <View style={styles.sizeRow}>
+                {sizes.map((size: string) => (
+                  <TouchableOpacity
+                    key={size}
+                    style={[
+                      styles.sizeButton,
+                      selectedSize === size && styles.sizeButtonActive,
+                    ]}
+                    onPress={() => setSelectedSize(size)}
+                  >
+                    <Text
+                      style={
+                        selectedSize === size
+                          ? styles.sizeTextActive
+                          : styles.sizeText
+                      }
                     >
-                      <Text
-                        style={
-                          selectedSize === size
-                            ? styles.sizeTextActive
-                            : styles.sizeText
-                        }
-                      >
-                        {size}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
+                      {size}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
-            {/* Quantity */}
-            <Text style={styles.quantity}>Quantity</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              placeholder="Enter quantity"
-              placeholderTextColor="#aaa"
-              value={quantity}
-              onChangeText={setQuantity}
-            />
+          {/* Quantity */}
+          <Text style={styles.quantity}>Quantity</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            placeholder="Enter quantity"
+            placeholderTextColor="#aaa"
+            value={quantity}
+            onChangeText={setQuantity}
+          />
 
-            {/* Total Summary */}
-            {quantity !== '' && !isNaN(Number(quantity)) && (
-              <>
-                <Text style={styles.summaryText}>Selected Quantity: {quantity}</Text>
-                <Text style={styles.summaryText}>
-                  Total Price: ₹{Number(quantity) * unitPrice}
-                </Text>
-              </>
-            )}
+          {/* Total Summary */}
+          {quantity !== '' && !isNaN(Number(quantity)) && (
+            <>
+              <Text style={styles.summaryText}>Selected Quantity: {quantity}</Text>
+              <Text style={styles.summaryText}>
+                Total Price: ₹{Number(quantity) * unitPrice}
+              </Text>
+            </>
+          )}
 
-            {/* Add to Cart Button */}
-            <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
-              <Text style={styles.cartText}>Add to Cart</Text>
-            </TouchableOpacity>
-          </ScrollView>
+          {/* Add to Cart Button */}
+          <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
+            <Text style={styles.cartText}>Add to Cart</Text>
+          </TouchableOpacity>
         </View>
-      </Animated.View>
+      </ScrollView>
     </View>
   );
 };
@@ -263,7 +249,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: moderateScale(6),
-    flex: 1,
+    marginTop: moderateScale(-20),
   },
   dragHandle: {
     width: moderateScale(40),
@@ -275,9 +261,9 @@ const styles = StyleSheet.create({
   },
   productName: { fontSize: moderateScale(20), fontWeight: '700', marginBottom: moderateScale(6), color: '#1E1E1E' },
   price: { fontSize: moderateScale(16), fontWeight: '600', color: '#1577EA', marginBottom: moderateScale(10) },
-  descriptionLabel: { fontWeight: '600', marginBottom: moderateScale(4) },
+  descriptionLabel: { fontWeight: '600', marginBottom: moderateScale(4), color:'black' },
   details: { fontSize: moderateScale(13), color: '#666', marginBottom: moderateScale(12) },
-  chooseSize: { fontWeight: '600', marginBottom: moderateScale(6) },
+  chooseSize: { fontWeight: '600', marginBottom: moderateScale(6), color:'black' },
   sizeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: moderateScale(10), marginBottom: moderateScale(16) },
   sizeButton: {
     borderWidth: 1,
@@ -287,13 +273,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: moderateScale(16),
     marginBottom: moderateScale(6),
   },
-  sizeButtonActive: {
-    backgroundColor: '#1577EA',
-    borderColor: '#1577EA',
-  },
+  sizeButtonActive: { backgroundColor: '#1577EA', borderColor: '#1577EA' },
   sizeText: { fontSize: moderateScale(13), color: '#333' },
   sizeTextActive: { fontSize: moderateScale(13), color: '#fff' },
-  quantity: { fontWeight: '600' },
+  quantity: { fontWeight: '600', color:'black' },
   input: {
     backgroundColor: '#fff',
     borderRadius: moderateScale(14),
@@ -312,4 +295,23 @@ const styles = StyleSheet.create({
     marginTop: moderateScale(10),
   },
   cartText: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(15) },
+  fullScreenLottie: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    zIndex: 999,
+  },
+  lottieScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: moderateScale(20),
+  },
+  lottieStyle: {
+    width: '80%',
+    height: '80%',
+  },
 });

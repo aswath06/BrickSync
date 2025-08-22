@@ -30,11 +30,14 @@ export const DamageHistory = ({ route }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [damageText, setDamageText] = useState('');
+  const [variation, setVariation] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [status, setStatus] = useState('Normal');
   const [file, setFile] = useState(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
 
   const statuses = ['Can Drive', 'Normal', 'Need to Change'];
 
@@ -52,40 +55,48 @@ export const DamageHistory = ({ route }) => {
   };
 
   const handleAddDamage = async () => {
-    try {
-      const vehicleId = truck?.id;
-      if (!vehicleId) throw new Error('Truck ID not found');
+  if (!damageText || !variation || !selectedDate || !status) {
+    alert('Please fill all fields before submitting.');
+    return;
+  }
 
-      const payload = {
-        title: damageText || 'No Title',
-        fileUrl: file?.uri || '', // replace with real URL if uploading to cloud
-        date: selectedDate.toISOString().split('T')[0],
-        status,
-      };
+  setLoading(true); // start loading
+  try {
+    const vehicleId = truck?.id;
+    if (!vehicleId) throw new Error('Truck ID not found');
 
-      // Add locally for display
-      addDamage(vehicleNumber, {
-        id: Date.now().toString(),
-        ...payload,
-        file,
-        changed: false,
-      });
+    const payload = {
+      title: damageText,
+      variation,
+      fileUrl: file?.uri || '', // replace with real URL if uploading to cloud
+      date: selectedDate.toISOString().split('T')[0],
+      status,
+    };
 
-      // Submit to backend
-      await axios.post(`${baseUrl}${AddServiceToVehicleEndpoint(vehicleId)}`, payload);
+    // Add locally for display
+    addDamage(vehicleNumber, {
+      id: Date.now().toString(),
+      ...payload,
+      file,
+      changed: false,
+    });
 
-      console.log('✅ Damage report submitted');
+    // Submit to backend
+    await axios.post(`${baseUrl}${AddServiceToVehicleEndpoint(vehicleId)}`, payload);
 
-    } catch (err) {
-      console.error('❌ Failed to submit damage report:', err?.response?.data || err.message);
-    } finally {
-      setModalVisible(false);
-      setDamageText('');
-      setFile(null);
-      setStatus('Normal');
-      setSelectedDate(new Date());
-    }
-  };
+    console.log('✅ Damage report submitted');
+  } catch (err) {
+    console.error('❌ Failed to submit damage report:', err?.response?.data || err.message);
+  } finally {
+    setModalVisible(false);
+    setDamageText('');
+    setVariation('');
+    setFile(null);
+    setStatus('Normal');
+    setSelectedDate(new Date());
+    setLoading(false); // stop loading
+  }
+};
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -143,6 +154,7 @@ export const DamageHistory = ({ route }) => {
                     <Text style={styles.text}>{item.title || item.text}</Text>
                     {item.changed && <Text style={styles.changedBadge}>Changed</Text>}
                   </View>
+                  <Text style={styles.subText}>Variation: {item.variation || 'N/A'}</Text>
                   <Text style={styles.subText}>Date: {item.date}</Text>
                   <Text style={[styles.subText, { color: getStatusColor(item.status) }]}>
                     Status: {item.status}
@@ -163,13 +175,27 @@ export const DamageHistory = ({ route }) => {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Damage Report</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Damage Report</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
 
             <TextInput
               style={styles.input}
               placeholder="Describe the damage"
+              placeholderTextColor="#666"
               value={damageText}
               onChangeText={setDamageText}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Variation"
+              placeholderTextColor="#666"
+              value={variation}
+              onChangeText={setVariation}
             />
 
             <TouchableOpacity onPress={handleFileUpload} style={styles.uploadBtn}>
@@ -207,9 +233,16 @@ export const DamageHistory = ({ route }) => {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.addBtn} onPress={handleAddDamage}>
-              <Text style={styles.addBtnText}>Submit</Text>
-            </TouchableOpacity>
+            <TouchableOpacity
+  style={[styles.addBtn, loading && { opacity: 0.7 }]}
+  onPress={handleAddDamage}
+  disabled={loading}
+>
+  <Text style={styles.addBtnText}>
+    {loading ? 'Submitting...' : 'Submit'}
+  </Text>
+</TouchableOpacity>
+
           </View>
         </View>
       </Modal>
@@ -217,7 +250,6 @@ export const DamageHistory = ({ route }) => {
   );
 };
 
-// Your styles remain the same
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
@@ -242,7 +274,7 @@ const styles = StyleSheet.create({
   },
   subTitle: {
     fontSize: moderateScale(14),
-    color: '#666',
+    color: '#000',
     marginBottom: moderateScale(12),
   },
   card: {
@@ -266,9 +298,9 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(10),
     fontWeight: 'bold',
   },
-  text: { fontSize: moderateScale(14), fontWeight: '600' },
-  subText: { fontSize: moderateScale(12), color: '#555' },
-  fileText: { fontSize: moderateScale(12), color: '#1577EA', marginTop: moderateScale(4) },
+  text: { fontSize: moderateScale(14), fontWeight: '600', color: '#000' },
+  subText: { fontSize: moderateScale(12), color: '#000' },
+  fileText: { fontSize: moderateScale(12), color: '#000', marginTop: moderateScale(4) },
   fab: {
     position: 'absolute',
     bottom: moderateScale(30),
@@ -293,17 +325,18 @@ const styles = StyleSheet.create({
     borderTopRightRadius: moderateScale(20),
     borderTopLeftRadius: moderateScale(20),
   },
-  modalTitle: { fontSize: moderateScale(16), fontWeight: 'bold', marginBottom: moderateScale(10) },
+  modalTitle: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#000', marginBottom: moderateScale(10) },
   input: {
     borderWidth: moderateScale(1),
     borderColor: '#ccc',
     borderRadius: moderateScale(8),
     padding: moderateScale(10),
     marginBottom: moderateScale(10),
+    color: '#000',
   },
   uploadBtn: {
     padding: moderateScale(10),
-    backgroundColor: '#eee',
+    backgroundColor: 'blue',
     borderRadius: moderateScale(8),
     marginBottom: moderateScale(10),
     alignItems: 'center',
@@ -317,10 +350,8 @@ const styles = StyleSheet.create({
     marginRight: moderateScale(8),
     marginBottom: moderateScale(8),
   },
-  activeChip: {
-    backgroundColor: '#1577EA',
-  },
-  chipText: { color: '#333', fontSize: moderateScale(12) },
+  activeChip: { backgroundColor: '#1577EA' },
+  chipText: { color: '#000', fontSize: moderateScale(12) },
   activeChipText: { color: '#fff', fontSize: moderateScale(12) },
   addBtn: {
     backgroundColor: '#1577EA',
@@ -330,4 +361,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addBtnText: { color: '#fff', fontWeight: 'bold' },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: moderateScale(10),
+  },
+  cancelText: {
+    fontSize: moderateScale(14),
+    color: '#F44336',
+    fontWeight: 'bold',
+  },
 });

@@ -202,7 +202,7 @@ export const DashboardScreen = ({ navigation }) => {
       <UserHeaderCard
         name={user?.name || 'Guest'}
         imageUrl="https://images.unsplash.com/photo-1507537297725-24a1c029d3ca"
-        width={420}
+        width={370}
         height={64}
       />
 
@@ -221,7 +221,7 @@ export const DashboardScreen = ({ navigation }) => {
                   balance={user?.balance}
                   advance={user?.advance}
                   driverId={user?.userid || 'null'}
-                  width={420}
+                  width={370}
                   height={200}
                 />
               </View>
@@ -246,7 +246,7 @@ export const DashboardScreen = ({ navigation }) => {
                             ? 'Mark as Delivered'
                             : 'Mark as Noted'
                         }
-                        width={420}
+                        width={370}
                         disabled={loadingOrderId === job.orderId}
                         onPress={() => {
                           if (job.status === 'Noted') {
@@ -272,7 +272,7 @@ export const DashboardScreen = ({ navigation }) => {
               balance={user?.balance}
               advance={user?.advance}
               driverId={user?.userid || 'null'}
-              width={380}
+              width={370}
               height={170}
             />
           </View>

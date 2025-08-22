@@ -63,7 +63,7 @@ export const DriverTruckView = ({ driverId }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Your Truck</Text>
         <TouchableOpacity>
-          <Text style={styles.changeBtn}>Change</Text>
+          <Text style={styles.changeBtn}>help</Text>
         </TouchableOpacity>
       </View>
 
