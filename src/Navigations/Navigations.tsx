@@ -26,6 +26,8 @@ import { StatementPage } from '../Screens/StatementPage';
 import ExportStatement from '../Screens/ExportStatement';
 import { BillScreen } from '../Screens/BillScreen';
 import { AddUserPage } from '../Screens/AddUserPage';
+import TruckDetails from '../Screens/TruckDetails';
+import { AddTruckScreen } from '../Screens/AddTruckScreen';
 
 const RootStack = createNativeStackNavigator();
 
@@ -70,6 +72,8 @@ export const Navigation = () => {
         <RootStack.Screen name="ExportStatement" component={ExportStatement} options={{ headerShown: false }} />
         <RootStack.Screen name="BillScreen" component={BillScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="AddUserPage" component={AddUserPage} options={{ headerShown: false }} />
+        <RootStack.Screen name="TruckDetails" component={TruckDetails} options={{ headerShown: false }} />
+        <RootStack.Screen name="AddTruckScreen" component={AddTruckScreen} options={{ headerShown: false }} />
       </RootStack.Navigator>
     </NavigationContainer>
   );

@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { ArrowBack, FrontTruck, TwoPersonIcon } from '../assets';
 import { useTruckStore } from '../stores/useTruckStore';
 import { moderateScale } from './utils/scalingUtils';
@@ -51,42 +52,33 @@ const TruckCard = ({ truckNumber, due, details, isTruckActive }) => {
       </View>
 
       <View style={styles.detailRow}>
-  <Text style={styles.label}>RC Expiry:</Text>
-  <Text style={styles.valueText}>{formatDate(details.rcExpiry)}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Insurance:</Text>
-  <Text style={styles.valueText}>{formatDate(details.insurance)}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Pollution:</Text>
-  <Text style={styles.valueText}>{formatDate(details.pollution)}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Permit:</Text>
-  <Text style={styles.valueText}>{details.permit || '-'}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Fitness:</Text>
-  <Text style={styles.valueText}>{formatDate(details.fitness)}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Tyre Changed:</Text>
-  <Text style={styles.valueText}>{formatDate(details.tyreChangedDate)}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Total KM:</Text>
-  <Text style={styles.valueText}>{details.TotalKm || '-'}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Driver:</Text>
-  <Text style={styles.valueText}>{details.driver || '-'}</Text>
-</View>
-<View style={styles.detailRow}>
-  <Text style={styles.label}>Driver ID:</Text>
-  <Text style={styles.valueText}>{details.Driverid || '-'}</Text>
-</View>
-
+        <Text style={styles.label}>RC Expiry:</Text>
+        <Text style={styles.valueText}>{formatDate(details.rcExpiry)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Insurance:</Text>
+        <Text style={styles.valueText}>{formatDate(details.insurance)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Pollution:</Text>
+        <Text style={styles.valueText}>{formatDate(details.pollution)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Permit:</Text>
+        <Text style={styles.valueText}>{details.permit || '-'}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Fitness:</Text>
+        <Text style={styles.valueText}>{formatDate(details.fitness)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Tyre Changed:</Text>
+        <Text style={styles.valueText}>{formatDate(details.tyreChangedDate)}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <Text style={styles.label}>Total KM:</Text>
+        <Text style={styles.valueText}>{details.TotalKm || '-'}</Text>
+      </View>
     </View>
   );
 };
@@ -94,6 +86,7 @@ const TruckCard = ({ truckNumber, due, details, isTruckActive }) => {
 export const AdminTruckView = ({ overrideTrucks }) => {
   const { trucks, fetchAllTrucks } = useTruckStore();
   const [isLoading, setIsLoading] = useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const loadTrucks = async () => {
@@ -142,45 +135,66 @@ export const AdminTruckView = ({ overrideTrucks }) => {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 50 }} style={styles.container}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity>
-          <ArrowBack color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>All Trucks</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <View style={styles.statusContainer}>
-        <View style={styles.statusCard}>
-          <View style={styles.statusRow}>
-            <TwoPersonIcon width={24} height={24} />
-            <Text style={styles.statusTitle}>Active Trucks</Text>
-          </View>
-          <Text style={styles.statusCount}>{activeTrucks.length}</Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} style={styles.container}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ArrowBack color="black" />
+          </TouchableOpacity>
+          <Text style={styles.headerText}>All Trucks</Text>
+          <View style={{ width: 24 }} />
         </View>
-        <View style={styles.statusCard}>
-          <View style={styles.statusRow}>
-            <TwoPersonIcon width={24} height={24} color="orange" />
-            <Text style={styles.statusTitle}>Inactive</Text>
-          </View>
-          <Text style={styles.statusCount}>{inactiveTrucks.length}</Text>
-        </View>
-      </View>
 
-      {[...activeTrucks, ...inactiveTrucks].map((truck, index) => {
-        const dueInfo = getNearestDue(truck.details);
-        return (
-          <TruckCard
-            key={index}
-            truckNumber={truck.number}
-            due={dueInfo}
-            details={truck.details}
-            isTruckActive={truck.isTruckActive}
-          />
-        );
-      })}
-    </ScrollView>
+        <View style={styles.statusContainer}>
+          <View style={styles.statusCard}>
+            <View style={styles.statusRow}>
+              <TwoPersonIcon width={24} height={24} />
+              <Text style={styles.statusTitle}>Active Trucks</Text>
+            </View>
+            <Text style={styles.statusCount}>{activeTrucks.length}</Text>
+          </View>
+          <View style={styles.statusCard}>
+            <View style={styles.statusRow}>
+              <TwoPersonIcon width={24} height={24} color="orange" />
+              <Text style={styles.statusTitle}>Inactive</Text>
+            </View>
+            <Text style={styles.statusCount}>{inactiveTrucks.length}</Text>
+          </View>
+        </View>
+
+        {[...activeTrucks, ...inactiveTrucks].map((truck, index) => {
+          const dueInfo = getNearestDue(truck.details);
+          return (
+            <TouchableOpacity
+              key={index}
+              onPress={() => navigation.navigate('TruckDetails', { truck })}
+            >
+              <TruckCard
+                truckNumber={truck.number}
+                due={dueInfo}
+                details={truck.details}
+                isTruckActive={truck.isTruckActive}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Floating Plus Button */}
+      {/* Floating Plus Button */}
+<TouchableOpacity
+  style={styles.floatingButton}
+  onPress={() =>
+    navigation.navigate('AddTruckScreen', {
+    })
+  }
+>
+  <Text style={{ color: 'white', fontSize: moderateScale(28), fontWeight: 'bold' }}>
+    +
+  </Text>
+</TouchableOpacity>
+
+    </View>
   );
 };
 
@@ -190,8 +204,8 @@ const styles = StyleSheet.create({
     padding: moderateScale(24),
     backgroundColor: '#f9f9f9',
   },
-  valueText:{
-    color:'black'
+  valueText: {
+    color: 'black',
   },
   loaderContainer: {
     flex: 1,
@@ -233,7 +247,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: moderateScale(4),
-    
   },
   statusTitle: {
     marginLeft: moderateScale(8),
@@ -286,5 +299,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     width: moderateScale(110),
     color: '#000',
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: moderateScale(30),
+    right: moderateScale(30),
+    backgroundColor: '#4caf50',
+    width: moderateScale(60),
+    height: moderateScale(60),
+    borderRadius: moderateScale(30),
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

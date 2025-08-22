@@ -208,52 +208,60 @@ export const DashboardScreen = ({ navigation }) => {
 
       {userRole === 2 ? (
         <>
-          <View style={styles.section}>
-            <MainCard
-              name={user?.name || 'Guest'}
-              company="Aswath Hollow Bricks and Lorry Services"
-              balance={user?.balance}
-              advance={user?.advance}
-              driverId={user?.userid || 'null'}
-              width={420}
-              height={200}
-            />
-          </View>
-
-          <View style={styles.section}>
-            {jobData.length === 0 ? (
-              <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>No data found</Text>
+          {trucks.length === 0 ? (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>No vehicle assigned</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.section}>
+                <MainCard
+                  name={user?.name || 'Guest'}
+                  company="Aswath Hollow Bricks and Lorry Services"
+                  balance={user?.balance}
+                  advance={user?.advance}
+                  driverId={user?.userid || 'null'}
+                  width={420}
+                  height={200}
+                />
               </View>
-            ) : (
-              jobData.map((job, index) => (
-                <View key={job.id} style={styles.section}>
-                  <JobCard
-                    slNo={(index + 1).toString().padStart(2, '0')}
-                    customerName={job.customer}
-                    customerPhone={job.customerPhone}
-                    loadDetails={job.materials.map(mat => `${mat.name} * ${mat.quantity}`)}
-                    buttonLabel={
-                      job.status === 'Delivered'
-                        ? 'Delivered'
-                        : job.status === 'Noted'
-                        ? 'Mark as Delivered'
-                        : 'Mark as Noted'
-                    }
-                    width={420}
-                    disabled={loadingOrderId === job.orderId}
-                    onPress={() => {
-                      if (job.status === 'Noted') {
-                        uploadDeliveryFile(job.orderId);
-                      } else if (job.status !== 'Delivered') {
-                        updateOrderStatus(job.orderId, 'noted');
-                      }
-                    }}
-                  />
-                </View>
-              ))
-            )}
-          </View>
+
+              <View style={styles.section}>
+                {jobData.length === 0 ? (
+                  <View style={styles.noDataContainer}>
+                    <Text style={styles.noDataText}>No data found</Text>
+                  </View>
+                ) : (
+                  jobData.map((job, index) => (
+                    <View key={job.id} style={styles.section}>
+                      <JobCard
+                        slNo={(index + 1).toString().padStart(2, '0')}
+                        customerName={job.customer}
+                        customerPhone={job.customerPhone}
+                        loadDetails={job.materials.map(mat => `${mat.name} * ${mat.quantity}`)}
+                        buttonLabel={
+                          job.status === 'Delivered'
+                            ? 'Delivered'
+                            : job.status === 'Noted'
+                            ? 'Mark as Delivered'
+                            : 'Mark as Noted'
+                        }
+                        width={420}
+                        disabled={loadingOrderId === job.orderId}
+                        onPress={() => {
+                          if (job.status === 'Noted') {
+                            uploadDeliveryFile(job.orderId);
+                          } else if (job.status !== 'Delivered') {
+                            updateOrderStatus(job.orderId, 'noted');
+                          }
+                        }}
+                      />
+                    </View>
+                  ))
+                )}
+              </View>
+            </>
+          )}
         </>
       ) : userRole === 3 ? (
         <View>
