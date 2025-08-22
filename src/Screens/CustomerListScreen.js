@@ -1,5 +1,5 @@
 // src/screens/CustomerListScreen.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   Dimensions,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { moderateScale } from './utils/scalingUtils';
 
@@ -16,12 +17,29 @@ const CARD_WIDTH = (width - 48) / 2; // 16px padding + 16px gap
 
 export const CustomerListScreen = ({ route, navigation }) => {
   const { customers } = route.params;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredCustomers, setFilteredCustomers] = useState(customers);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredCustomers(customers);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = customers.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.phone.includes(query) ||
+          (c.email && c.email.toLowerCase().includes(query))
+      );
+      setFilteredCustomers(filtered);
+    }
+  }, [searchQuery, customers]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => {
-       navigation.navigate('Cart', { selectedCustomer: item });
+        navigation.navigate('Cart', { selectedCustomer: item });
       }}
     >
       <View style={styles.imageContainer}>
@@ -46,13 +64,24 @@ export const CustomerListScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Customer List</Text>
-      {customers.length > 0 ? (
+
+      {/* Search Bar */}
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search by name, phone, or email"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        clearButtonMode="while-editing"
+      />
+
+      {filteredCustomers.length > 0 ? (
         <FlatList
-          data={customers}
+          data={filteredCustomers}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={renderItem}
           numColumns={2}
           columnWrapperStyle={styles.row}
+          showsVerticalScrollIndicator={false}
         />
       ) : (
         <Text style={styles.text}>No customers found.</Text>
@@ -71,16 +100,25 @@ const styles = StyleSheet.create({
   header: {
     fontSize: moderateScale(22),
     fontWeight: 'bold',
-    marginBottom: moderateScale(16),
+    marginBottom: moderateScale(12),
     textAlign: 'center',
     color: '#000',
+  },
+  searchInput: {
+    height: moderateScale(40),
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: moderateScale(8),
+    paddingHorizontal: moderateScale(10),
+    marginBottom: moderateScale(16),
+    backgroundColor: '#fff',
   },
   row: {
     justifyContent: 'space-between',
     marginBottom: moderateScale(16),
   },
   card: {
-    width: CARD_WIDTH, // keep dynamic, can scale if needed
+    width: CARD_WIDTH,
     backgroundColor: '#fff',
     borderRadius: moderateScale(12),
     padding: moderateScale(12),

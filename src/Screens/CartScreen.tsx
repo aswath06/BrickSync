@@ -27,34 +27,33 @@ export const CartScreen = ({ navigation, route }) => {
   const [editingItem, setEditingItem] = useState(null);
   const [editQty, setEditQty] = useState('');
   const [editPrice, setEditPrice] = useState('');
-  const [transportCharge, setTransportCharge] = useState('0'); // transport charge state
-  const [loading, setLoading] = useState(false); // loading state for checkout
+  const [transportCharge, setTransportCharge] = useState('0');
+  const [loading, setLoading] = useState(false);
 
   const selectedCustomer = route?.params?.selectedCustomer;
   const customers = users.filter((user) => user.userrole === 3);
 
   const cartTotal = cart.reduce((acc, item) => acc + item.total, 0);
-  const grandTotal = cartTotal + parseFloat(transportCharge || '0'); // grand total includes transport
+  const grandTotal = cartTotal + parseFloat(transportCharge || '0');
 
   const handleCheckout = async () => {
     if (!selectedCustomer) {
       Alert.alert('Customer Required', 'Please select a customer before checking out.');
       return;
     }
-
     if (cart.length === 0) {
       Alert.alert('Cart is Empty', 'Please add items to the cart.');
       return;
     }
 
-    setLoading(true); // start loading
+    setLoading(true);
 
     const orderPayload = {
       orderId: `ORD${Date.now()}`,
       vehicleNumber: 'TN39CK1288',
       userId: selectedCustomer.userid,
       customerName: selectedCustomer.name,
-      transportCharge: parseFloat(transportCharge) || 0, // include transport in order payload
+      transportCharge: parseFloat(transportCharge) || 0,
       products: cart.map((item) => ({
         id: item.product.id,
         name: item.product.name,
@@ -70,10 +69,11 @@ export const CartScreen = ({ navigation, route }) => {
       });
 
       if (response.status === 200 || response.status === 201) {
-        Alert.alert('Success', 'Order placed successfully!');
         clearCart();
-        setTransportCharge('0'); // reset transport charge
-        navigation.navigate('DashboardScreen', { screen: 'Profile' });
+        setTransportCharge('0');
+
+        // Navigate to BillScreen with order details
+        navigation.navigate('BillScreen', { order: orderPayload });
       } else {
         Alert.alert('Error', 'Order could not be placed. Try again.');
       }
@@ -82,7 +82,7 @@ export const CartScreen = ({ navigation, route }) => {
         error.response?.data?.message || 'Something went wrong while placing the order.';
       Alert.alert('Error', errorMessage);
     } finally {
-      setLoading(false); // stop loading
+      setLoading(false);
     }
   };
 
@@ -114,8 +114,6 @@ export const CartScreen = ({ navigation, route }) => {
     <View style={styles.card}>
       <View style={{ position: 'relative' }}>
         <Image source={{ uri: item.product.imageUrl }} style={styles.image} resizeMode="contain" />
-
-        {/* Delete Button */}
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() =>
@@ -141,16 +139,8 @@ export const CartScreen = ({ navigation, route }) => {
       <Text style={styles.subText}>Quantity: {item.quantity}</Text>
       <Text style={styles.totalPrice}>Subtotal: ₹{item.total}</Text>
 
-      {/* Edit button */}
       <TouchableOpacity
-        style={{
-          backgroundColor: '#1577EA',
-          paddingVertical: moderateScale(6),
-          paddingHorizontal: moderateScale(12),
-          borderRadius: moderateScale(8),
-          alignSelf: 'flex-start',
-          marginTop: moderateScale(8),
-        }}
+        style={styles.editButton}
         onPress={() => handleEditItem(item)}
       >
         <Text style={{ color: '#fff', fontWeight: '500' }}>Edit</Text>
@@ -199,25 +189,16 @@ export const CartScreen = ({ navigation, route }) => {
             showsVerticalScrollIndicator={false}
           />
 
-          {/* Summary Container */}
           <View style={styles.summaryContainer}>
             <View style={{ flex: 1 }}>
               <Text style={styles.totalLabel}>Grand Total</Text>
               <Text style={styles.totalValue}>₹{grandTotal}</Text>
             </View>
 
-            {/* Transport charge input */}
             <View style={{ flex: 1, marginLeft: moderateScale(10) }}>
               <Text style={styles.totalLabel}>Transport Charge</Text>
               <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#ccc',
-                  borderRadius: moderateScale(8),
-                  padding: moderateScale(6),
-                  fontSize: moderateScale(14),
-                  marginTop: moderateScale(4),
-                }}
+                style={styles.transportInput}
                 keyboardType="numeric"
                 value={transportCharge}
                 onChangeText={setTransportCharge}
@@ -226,11 +207,10 @@ export const CartScreen = ({ navigation, route }) => {
             </View>
           </View>
 
-          {/* Checkout Button */}
           <TouchableOpacity
             style={[styles.checkoutButton, loading && { opacity: 0.7 }]}
             onPress={handleCheckout}
-            disabled={loading} // prevent multiple taps
+            disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -247,78 +227,28 @@ export const CartScreen = ({ navigation, route }) => {
 
       {/* Edit Item Modal */}
       <Modal visible={editModalVisible} animationType="slide" transparent>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            style={{
-              width: '80%',
-              backgroundColor: '#fff',
-              borderRadius: moderateScale(12),
-              padding: moderateScale(20),
-            }}
-          >
-            <Text style={{ fontSize: moderateScale(18), fontWeight: 'bold', marginBottom: moderateScale(12) }}>
-              Edit Item
-            </Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Item</Text>
             <Text>Unit Price:</Text>
             <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: moderateScale(8),
-                padding: moderateScale(8),
-                marginBottom: moderateScale(12),
-              }}
+              style={styles.modalInput}
               keyboardType="numeric"
               value={editPrice}
               onChangeText={setEditPrice}
             />
             <Text>Quantity:</Text>
             <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: moderateScale(8),
-                padding: moderateScale(8),
-                marginBottom: moderateScale(12),
-              }}
+              style={styles.modalInput}
               keyboardType="numeric"
               value={editQty}
               onChangeText={setEditQty}
             />
-
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#4CAF50',
-                  padding: moderateScale(10),
-                  borderRadius: moderateScale(8),
-                  flex: 1,
-                  marginRight: moderateScale(8),
-                  alignItems: 'center',
-                }}
-                onPress={handleSaveEdit}
-              >
+              <TouchableOpacity style={styles.saveButton} onPress={handleSaveEdit}>
                 <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#F44336',
-                  padding: moderateScale(10),
-                  borderRadius: moderateScale(8),
-                  flex: 1,
-                  marginLeft: moderateScale(8),
-                  alignItems: 'center',
-                }}
-                onPress={() => setEditModalVisible(false)}
-              >
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
                 <Text style={{ color: '#fff', fontWeight: '600' }}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -339,18 +269,8 @@ const styles = StyleSheet.create({
   cartList: { paddingBottom: moderateScale(20) },
   card: { backgroundColor: '#EAF1FB', borderRadius: moderateScale(16), padding: moderateScale(14), marginBottom: moderateScale(16) },
   image: { width: '100%', height: moderateScale(120), borderRadius: moderateScale(10), marginBottom: moderateScale(10) },
-  deleteButton: {
-    position: 'absolute',
-    top: moderateScale(8),
-    right: moderateScale(8),
-    backgroundColor: '#E53935',
-    width: moderateScale(28),
-    height: moderateScale(28),
-    borderRadius: moderateScale(14),
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
+  deleteButton: { position: 'absolute', top: moderateScale(8), right: moderateScale(8), backgroundColor: '#E53935', width: moderateScale(28), height: moderateScale(28), borderRadius: moderateScale(14), justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  editButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(6), paddingHorizontal: moderateScale(12), borderRadius: moderateScale(8), alignSelf: 'flex-start', marginTop: moderateScale(8) },
   selectCustomerButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(8), paddingHorizontal: moderateScale(12), borderRadius: moderateScale(8), marginTop: moderateScale(8), alignSelf: 'flex-start' },
   selectCustomerText: { color: '#fff', fontSize: moderateScale(14), fontWeight: '500' },
   productName: { fontSize: moderateScale(15), fontWeight: '600', color: '#1E1E1E', marginBottom: moderateScale(4) },
@@ -360,8 +280,15 @@ const styles = StyleSheet.create({
   summaryContainer: { backgroundColor: '#fff', borderTopWidth: moderateScale(1), borderTopColor: '#ddd', paddingVertical: moderateScale(12), paddingHorizontal: moderateScale(16), flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(10) },
   totalLabel: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#333' },
   totalValue: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#1577EA' },
+  transportInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(6), fontSize: moderateScale(14), marginTop: moderateScale(4) },
   checkoutButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(14), borderRadius: moderateScale(12), alignItems: 'center', marginTop: moderateScale(12) },
   checkoutText: { color: '#fff', fontWeight: '600', fontSize: moderateScale(16) },
   clearButton: { backgroundColor: '#E53935', paddingVertical: moderateScale(12), borderRadius: moderateScale(12), alignItems: 'center', marginTop: moderateScale(10) },
   clearButtonText: { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(15) },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', backgroundColor: '#fff', borderRadius: moderateScale(12), padding: moderateScale(20) },
+  modalTitle: { fontSize: moderateScale(18), fontWeight: 'bold', marginBottom: moderateScale(12) },
+  modalInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(8), marginBottom: moderateScale(12) },
+  saveButton: { backgroundColor: '#4CAF50', padding: moderateScale(10), borderRadius: moderateScale(8), flex: 1, marginRight: moderateScale(8), alignItems: 'center' },
+  cancelButton: { backgroundColor: '#F44336', padding: moderateScale(10), borderRadius: moderateScale(8), flex: 1, marginLeft: moderateScale(8), alignItems: 'center' },
 });
