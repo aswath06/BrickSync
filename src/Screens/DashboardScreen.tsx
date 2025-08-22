@@ -23,20 +23,22 @@ import { moderateScale } from './utils/scalingUtils';
 export const DashboardScreen = ({ navigation }) => {
   const user = useUserStore((state) => state.user);
   const userRole = user?.userrole;
+
   const [loadingOrderId, setLoadingOrderId] = useState(null);
   const [jobData, setJobData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [allUsersCount, setAllUsersCount] = useState<number | null>(null);
   const [allDriversCount, setAllDriversCount] = useState<number | null>(null);
 
-  const fetchTrucksByDriverId = useTruckStore((state) => state.fetchTrucksByDriverId);
   const trucks = useTruckStore((state) => state.trucks);
+  const fetchTrucksByDriverId = useTruckStore((state) => state.fetchTrucksByDriverId);
 
   const unassignedJobsCount = useMemo(
     () => jobData.filter(job => job.status.toLowerCase() === 'assign').length,
     [jobData]
   );
 
+  // Fetch trucks for driver or general data on mount
   useEffect(() => {
     if (userRole === 2 && user?.userid) {
       fetchTrucksByDriverId(user.userid);
@@ -44,8 +46,9 @@ export const DashboardScreen = ({ navigation }) => {
       fetchJobs();
       fetchAllUsersAndDriversCount();
     }
-  }, []);
+  }, [user]);
 
+  // Once trucks are loaded for driver, fetch jobs by vehicle
   useEffect(() => {
     if (userRole === 2 && trucks.length > 0) {
       const vehicleNumber = trucks[0]?.number;
@@ -53,6 +56,7 @@ export const DashboardScreen = ({ navigation }) => {
     }
   }, [trucks]);
 
+  // Fetch all jobs (Admin)
   const fetchJobs = async () => {
     try {
       const response = await fetch(`${baseUrl}/api/orders`);
@@ -63,6 +67,7 @@ export const DashboardScreen = ({ navigation }) => {
     }
   };
 
+  // Fetch jobs for specific driver vehicle
   const fetchJobsByVehicle = async (vehicleNumber) => {
     try {
       const response = await fetch(`${baseUrl}/api/orders/vehicle/${vehicleNumber}`);
@@ -73,41 +78,35 @@ export const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const transformJobData = (data) => {
-    return data
-      .filter((item) => item.status.toLowerCase() !== 'delivered')
-      .map((item, index) => ({
-        id: item.id.toString(),
-        orderId: item.orderId,
-        slNo: (index + 1).toString(),
-        customer: item.User?.name || 'Unknown',
-        customerPhone: item.User?.phone || 'N/A',
-        ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-        vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
-        materials: Array.isArray(item.products)
-          ? item.products.map((p) => ({
-              name: p.name,
-              quantity: p.quantity,
-              price: p.price,
-            }))
-          : [],
-      }));
-  };
+  // Transform job data for UI
+  const transformJobData = (data) => data
+    .filter(item => item.status.toLowerCase() !== 'delivered')
+    .map((item, index) => ({
+      id: item.id.toString(),
+      orderId: item.orderId,
+      slNo: (index + 1).toString(),
+      customer: item.User?.name || 'Unknown',
+      customerPhone: item.User?.phone || 'N/A',
+      ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+      vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
+      materials: Array.isArray(item.products)
+        ? item.products.map(p => ({ name: p.name, quantity: p.quantity, price: p.price }))
+        : [],
+    }));
 
+  // Fetch users/drivers count (Admin)
   const fetchAllUsersAndDriversCount = async () => {
     try {
       const token = await getToken();
       if (!token) return;
 
-      // Fetch Customers (userrole 2)
       const customersRes = await fetch(`${baseUrl}/api/users/count/3`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const customersData = await customersRes.json();
       setAllUsersCount(customersData.count || 0);
 
-      // Fetch Drivers (userrole 3)
       const driversRes = await fetch(`${baseUrl}/api/users/count/2`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -141,11 +140,7 @@ export const DashboardScreen = ({ navigation }) => {
 
   const uploadImage = async (file) => {
     const data = new FormData();
-    data.append('file', {
-      uri: file.uri,
-      type: file.type,
-      name: file.name,
-    });
+    data.append('file', { uri: file.uri, type: file.type, name: file.name });
     data.append('upload_preset', 'bricksync');
 
     try {
@@ -193,10 +188,9 @@ export const DashboardScreen = ({ navigation }) => {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    const refreshAction =
-      userRole === 2 && trucks.length > 0
-        ? fetchJobsByVehicle(trucks[0]?.number)
-        : fetchJobs();
+    const refreshAction = userRole === 2 && trucks.length > 0
+      ? fetchJobsByVehicle(trucks[0]?.number)
+      : fetchJobs();
     Promise.resolve(refreshAction).finally(() => setRefreshing(false));
   }, [trucks]);
 
@@ -208,7 +202,7 @@ export const DashboardScreen = ({ navigation }) => {
       <UserHeaderCard
         name={user?.name || 'Guest'}
         imageUrl="https://images.unsplash.com/photo-1507537297725-24a1c029d3ca"
-        width={380}
+        width={420}
         height={64}
       />
 
@@ -221,8 +215,8 @@ export const DashboardScreen = ({ navigation }) => {
               balance={user?.balance}
               advance={user?.advance}
               driverId={user?.userid || 'null'}
-              width={380}
-              height={170}
+              width={420}
+              height={200}
             />
           </View>
 
@@ -238,7 +232,7 @@ export const DashboardScreen = ({ navigation }) => {
                     slNo={(index + 1).toString().padStart(2, '0')}
                     customerName={job.customer}
                     customerPhone={job.customerPhone}
-                    loadDetails={job.materials.map((mat) => `${mat.name} * ${mat.quantity}`)}
+                    loadDetails={job.materials.map(mat => `${mat.name} * ${mat.quantity}`)}
                     buttonLabel={
                       job.status === 'Delivered'
                         ? 'Delivered'
@@ -246,7 +240,7 @@ export const DashboardScreen = ({ navigation }) => {
                         ? 'Mark as Delivered'
                         : 'Mark as Noted'
                     }
-                    width={380}
+                    width={420}
                     disabled={loadingOrderId === job.orderId}
                     onPress={() => {
                       if (job.status === 'Noted') {
@@ -287,7 +281,6 @@ export const DashboardScreen = ({ navigation }) => {
               title="All Jobs"
               value={jobData.length}
             />
-
             <DashboardInfoCard
               height={120}
               icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' }}
