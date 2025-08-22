@@ -13,52 +13,73 @@ import { useTruckStore } from '../stores/useTruckStore';
 import { baseUrl } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
 
-export const AssignJobScreen = ({ route }) => {
+export const AssignJobScreen = ({ route, navigation }) => {
   const { orderId, jobId, customerName, orderTime, materials, vehicleNumber } = route.params;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(vehicleNumber);
   const { trucks, fetchAllTrucks } = useTruckStore();
 
- 
-const handleAssign = async () => {
-  try {
-    const response = await fetch(`${baseUrl}/api/orders/${orderId}/assign`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        vehicleNumber: selectedVehicle,
-      }),
-    });
+  // Assign job to vehicle
+  const handleAssign = async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/orders/${orderId}/assign`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehicleNumber: selectedVehicle }),
+      });
 
-    if (response.ok) {
-      console.log('Assignment successful');
-      Alert.alert('Success', 'Job assigned successfully');
-      // Optionally: navigate back or refresh screen
-    } else {
-      const errorData = await response.json();
-      console.error('Assignment failed:', errorData);
-      Alert.alert('Error', errorData?.message || 'Assignment failed');
+      if (response.ok) {
+        console.log('Assignment successful');
+        Alert.alert('Success', 'Job assigned successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Assignment failed:', errorData);
+        Alert.alert('Error', errorData?.message || 'Assignment failed');
+      }
+    } catch (error) {
+      console.error('Network error:', error);
+      Alert.alert('Error', 'Network error occurred');
     }
-  } catch (error) {
-    console.error('Network error:', error);
-    Alert.alert('Error', 'Network error occurred');
-  }
-};
-
-
-
-  const handleDelete = () => {
-    console.log('Job deleted');
   };
 
+  // Delete job
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        console.log('Job deleted successfully');
+        Alert.alert('Success', 'Job deleted successfully', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navigate to Dashboard screen
+              navigation.navigate('DashboardScreen');
+            },
+          },
+        ]);
+      } else {
+        const errorData = await response.json();
+        console.error('Delete failed:', errorData);
+        Alert.alert('Error', errorData?.message || 'Failed to delete job');
+      }
+    } catch (error) {
+      console.error('Network error:', error);
+      Alert.alert('Error', 'Network error occurred while deleting job');
+    }
+  };
+
+  // Open modal to select vehicle
   const handleOpenVehicleModal = async () => {
     await fetchAllTrucks();
     setModalVisible(true);
   };
 
+  // Select vehicle from modal
   const handleSelectVehicle = (vehicleNo) => {
     setSelectedVehicle(vehicleNo);
     setModalVisible(false);
@@ -68,8 +89,10 @@ const handleAssign = async () => {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>Assigned Job Details</Text>
+
         <Text style={styles.label}>Order Id:</Text>
         <Text style={styles.value}>{orderId}</Text>
+
         <Text style={styles.label}>Job ID:</Text>
         <Text style={styles.value}>{jobId}</Text>
 
@@ -101,6 +124,7 @@ const handleAssign = async () => {
         )}
       </ScrollView>
 
+      {/* Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.assignButton} onPress={handleAssign}>
           <Text style={styles.buttonText}>Assign Job</Text>
@@ -110,7 +134,7 @@ const handleAssign = async () => {
         </TouchableOpacity>
       </View>
 
-      {/* Modal for Vehicle Selection */}
+      {/* Vehicle Selection Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -123,13 +147,14 @@ const handleAssign = async () => {
                   style={styles.vehicleItem}
                   onPress={() => handleSelectVehicle(item.number)}
                 >
-                  <Text style={styles.vehicleText}>
-                    {item.number}
-                  </Text>
+                  <Text style={styles.vehicleText}>{item.number}</Text>
                 </TouchableOpacity>
               )}
             />
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={styles.cancelButton}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -139,127 +164,27 @@ const handleAssign = async () => {
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    padding: moderateScale(24),
-    paddingBottom: moderateScale(140),
-  },
-  heading: {
-    marginTop: moderateScale(30),
-    fontSize: moderateScale(24),
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: moderateScale(24),
-    color: '#000',
-  },
-  label: {
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    marginTop: moderateScale(12),
-    color: '#000',
-  },
-  value: {
-    fontSize: moderateScale(16),
-    color: '#000',
-  },
-  materialBlock: {
-    backgroundColor: '#e9f1ff',
-    padding: moderateScale(12),
-    borderRadius: moderateScale(10),
-    marginTop: moderateScale(8),
-    elevation: moderateScale(2),
-  },
-  materialName: {
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    color: '#000',
-  },
-  materialInfo: {
-    fontSize: moderateScale(14),
-    color: '#000',
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: moderateScale(20),
-    left: moderateScale(24),
-    right: moderateScale(24),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  assignButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: moderateScale(14),
-    paddingHorizontal: moderateScale(24),
-    borderRadius: moderateScale(10),
-    flex: 1,
-    marginRight: moderateScale(10),
-    elevation: moderateScale(3),
-  },
-  deleteButton: {
-    backgroundColor: '#F44336',
-    paddingVertical: moderateScale(14),
-    paddingHorizontal: moderateScale(24),
-    borderRadius: moderateScale(10),
-    flex: 1,
-    marginLeft: moderateScale(10),
-    elevation: moderateScale(3),
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    textAlign: 'center',
-    fontSize: moderateScale(16),
-  },
-  vehicleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: moderateScale(12),
-  },
-  changeText: {
-    color: '#1E90FF',
-    fontSize: moderateScale(14),
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    maxHeight: '60%',
-    backgroundColor: '#fff',
-    borderRadius: moderateScale(10),
-    padding: moderateScale(20),
-  },
-  modalTitle: {
-    fontSize: moderateScale(18),
-    fontWeight: 'bold',
-    marginBottom: moderateScale(10),
-    color: '#000',
-  },
-  vehicleItem: {
-    paddingVertical: moderateScale(12),
-    borderBottomWidth: moderateScale(1),
-    borderColor: '#eee',
-  },
-  vehicleText: {
-    fontSize: moderateScale(16),
-    color: '#000',
-  },
-  cancelButton: {
-    marginTop: moderateScale(10),
-    paddingVertical: moderateScale(10),
-    alignItems: 'center',
-  },
-  cancelText: {
-    color: '#F44336',
-    fontWeight: '600',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  scrollContent: { padding: moderateScale(24), paddingBottom: moderateScale(140) },
+  heading: { marginTop: moderateScale(30), fontSize: moderateScale(24), fontWeight: 'bold', textAlign: 'center', marginBottom: moderateScale(24), color: '#000' },
+  label: { fontSize: moderateScale(16), fontWeight: '600', marginTop: moderateScale(12), color: '#000' },
+  value: { fontSize: moderateScale(16), color: '#000' },
+  materialBlock: { backgroundColor: '#e9f1ff', padding: moderateScale(12), borderRadius: moderateScale(10), marginTop: moderateScale(8), elevation: moderateScale(2) },
+  materialName: { fontSize: moderateScale(16), fontWeight: '600', color: '#000' },
+  materialInfo: { fontSize: moderateScale(14), color: '#000' },
+  buttonContainer: { position: 'absolute', bottom: moderateScale(20), left: moderateScale(24), right: moderateScale(24), flexDirection: 'row', justifyContent: 'space-between' },
+  assignButton: { backgroundColor: '#4CAF50', paddingVertical: moderateScale(14), paddingHorizontal: moderateScale(24), borderRadius: moderateScale(10), flex: 1, marginRight: moderateScale(10), elevation: moderateScale(3) },
+  deleteButton: { backgroundColor: '#F44336', paddingVertical: moderateScale(14), paddingHorizontal: moderateScale(24), borderRadius: moderateScale(10), flex: 1, marginLeft: moderateScale(10), elevation: moderateScale(3) },
+  buttonText: { color: '#fff', fontWeight: '600', textAlign: 'center', fontSize: moderateScale(16) },
+  vehicleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: moderateScale(12) },
+  changeText: { color: '#1E90FF', fontSize: moderateScale(14), fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', maxHeight: '60%', backgroundColor: '#fff', borderRadius: moderateScale(10), padding: moderateScale(20) },
+  modalTitle: { fontSize: moderateScale(18), fontWeight: 'bold', marginBottom: moderateScale(10), color: '#000' },
+  vehicleItem: { paddingVertical: moderateScale(12), borderBottomWidth: moderateScale(1), borderColor: '#eee' },
+  vehicleText: { fontSize: moderateScale(16), color: '#000' },
+  cancelButton: { marginTop: moderateScale(10), paddingVertical: moderateScale(10), alignItems: 'center' },
+  cancelText: { color: '#F44336', fontWeight: '600' },
 });

@@ -1,7 +1,7 @@
 // config.js
 export const IP = '10.10.190.161';
 export const PORT = 3000;
-export const baseUrl = `https://bricksyncbackend-1.onrender.com`;
+export const baseUrl = `http://10.10.180.148:3000`;
 export const verifyUrl = baseUrl;
 
 // Vehicles
