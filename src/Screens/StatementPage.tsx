@@ -64,6 +64,8 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   const [orderModalVisible, setOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Statement | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
 
   // Initialize statements
   useEffect(() => {
@@ -111,40 +113,47 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
 
   // Add received statement
   const handleAddStatement = async () => {
-    try {
-      const payload = {
-        amount: parseFloat(amount),
-        modeOfPayment: 'Received',
-        typeOfPayment,
-      };
+  if (!amount || isNaN(Number(amount))) {
+    Alert.alert('Invalid', 'Please enter a valid amount');
+    return;
+  }
 
-      const res = await fetch(`${baseUrl}/api/users/add-statement/${userId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+  setSubmitting(true); // start loading
+  try {
+    const payload = {
+      amount: parseFloat(amount),
+      modeOfPayment: 'Received',
+      typeOfPayment,
+    };
 
-      if (!res.ok) throw new Error(await res.text());
+    const res = await fetch(`${baseUrl}/api/users/add-statement/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      const newStatement: Statement = {
-        date: new Date().toISOString(),
-        amount: payload.amount,
-        modeOfPayment: payload.modeOfPayment,
-        typeOfPayment: payload.typeOfPayment,
-      };
+    if (!res.ok) throw new Error(await res.text());
 
-      // Update visibleStatements and refresh filtered list
-      setVisibleStatements(prev => [newStatement, ...prev]);
-      applyFilter();
+    const newStatement: Statement = {
+      date: new Date().toISOString(),
+      amount: payload.amount,
+      modeOfPayment: payload.modeOfPayment,
+      typeOfPayment: payload.typeOfPayment,
+    };
 
-      setAmount('');
-      setModalVisible(false);
+    setVisibleStatements(prev => [newStatement, ...prev]);
+    applyFilter();
 
-      Alert.alert('Success', 'Statement added!');
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Something went wrong');
-    }
-  };
+    setAmount('');
+    setModalVisible(false);
+    Alert.alert('Success', 'Statement added!');
+  } catch (err: any) {
+    Alert.alert('Error', err.message || 'Something went wrong');
+  } finally {
+    setSubmitting(false); // stop loading
+  }
+};
+
 
   // Apply search and sort
   const applyFilter = () => {
@@ -235,7 +244,6 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
     }
   };
 
-  // Render each row
   const renderItem = ({ item }: { item: Statement }) => (
     <View style={styles.row}>
       <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
@@ -342,19 +350,27 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
             </View>
 
             <View style={styles.modalButtonsTall}>
-              <TouchableOpacity
-                style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]}
-                onPress={handleAddStatement}
-              >
-                <Text style={styles.modalButtonText}>Submit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+  <TouchableOpacity
+    style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]}
+    onPress={handleAddStatement}
+    disabled={submitting} // prevent multiple clicks
+  >
+    {submitting ? (
+      <ActivityIndicator size="small" color="#fff" />
+    ) : (
+      <Text style={styles.modalButtonText}>Submit</Text>
+    )}
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]}
+    onPress={() => setModalVisible(false)}
+    disabled={submitting} // prevent closing while submitting if you want
+  >
+    <Text style={styles.modalButtonText}>Cancel</Text>
+  </TouchableOpacity>
+</View>
+
           </View>
         </View>
       </Modal>
@@ -367,25 +383,28 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
         onRequestClose={() => setOrderModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalContentOrder}>
             {loadingOrder ? (
               <ActivityIndicator size="large" color="#007bff" style={{ marginVertical: 40 }} />
             ) : selectedOrder ? (
-              <View>
-                <Text>Order ID: {selectedOrder.orderId}</Text>
-                <Text>Vehicle No: {selectedOrder.vehicleNo ?? '-'}</Text>
-                <Text>Invoice No: {selectedOrder.invoiceNo ?? '-'}</Text>
-                <Text>Products:</Text>
-                {selectedOrder.products?.map((p: any, i: number) => (
-                  <Text key={i}>
-                    {i + 1}. {p.name} | Price: {p.price} | Quantity: {p.quantity}
-                  </Text>
-                ))}
-                <Text>Status: {selectedOrder.status ?? '-'}</Text>
-                <Text>Date: {new Date(selectedOrder.date).toLocaleString()}</Text>
+              <View style={{ maxHeight: '80%' }}>
+                <Text style={styles.orderTitle}>Order Details</Text>
+                <Text style={styles.orderText}>Order ID: {selectedOrder.orderId}</Text>
+                <Text style={styles.orderText}>Vehicle No: {selectedOrder.vehicleNo ?? '-'}</Text>
+                <Text style={styles.orderText}>Invoice No: {selectedOrder.invoiceNo ?? '-'}</Text>
+                <Text style={[styles.orderText, { marginTop: 10, fontWeight: '600' }]}>Products:</Text>
+                <View style={{ marginLeft: 8, marginTop: 4 }}>
+                  {selectedOrder.products?.map((p: any, i: number) => (
+                    <Text key={i} style={styles.orderText}>
+                      {i + 1}. {p.name} | Price: ₹{p.price} | Quantity: {p.quantity}
+                    </Text>
+                  ))}
+                </View>
+                <Text style={styles.orderText}>Status: {selectedOrder.status ?? '-'}</Text>
+                <Text style={styles.orderText}>Date: {new Date(selectedOrder.date).toLocaleString()}</Text>
                 {selectedOrder.image && (
                   <>
-                    <Text style={{ marginTop: 10, fontWeight: '600' }}>Order Image:</Text>
+                    <Text style={{ marginTop: 12, fontWeight: '600' }}>Order Image:</Text>
                     <Image
                       source={{ uri: selectedOrder.image }}
                       style={styles.orderImage}
@@ -399,13 +418,15 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
                   </>
                 )}
                 <TouchableOpacity
-                  style={[styles.modalButton, { backgroundColor: '#dc3545', marginTop: 12 }]}
+                  style={styles.closeOrderButton}
                   onPress={() => setOrderModalVisible(false)}
                 >
-                  <Text style={styles.modalButtonText}>Close</Text>
+                  <Text style={styles.closeOrderButtonText}>Close</Text>
                 </TouchableOpacity>
               </View>
-            ) : null}
+            ) : (
+              <Text style={{ textAlign: 'center', marginVertical: 40 }}>No order details available</Text>
+            )}
           </View>
         </View>
       </Modal>
@@ -447,13 +468,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '85%', backgroundColor: '#fff', borderRadius: moderateScale(10), padding: moderateScale(20), elevation: 5 },
   modalContentTall: { width: '90%', backgroundColor: '#ffe4e1', borderRadius: moderateScale(12), padding: moderateScale(25), elevation: 8, maxHeight: '80%', justifyContent: 'center' },
-  modalTitle: { fontSize: moderateScale(18), fontWeight: 'bold', marginBottom: moderateScale(12), textAlign: 'center' },
   modalTitleColorful: { fontSize: moderateScale(20), fontWeight: 'bold', marginBottom: moderateScale(16), textAlign: 'center', color: '#d6336c' },
   modalButtonsTall: { flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(16) },
   modalButtonTall: { flex: 1, paddingVertical: moderateScale(14), marginHorizontal: moderateScale(6), borderRadius: moderateScale(8) },
-  modalButton: { flex: 1, padding: moderateScale(10), marginHorizontal: moderateScale(5), borderRadius: moderateScale(6) },
   modalButtonText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
   sortRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: moderateScale(12) },
   sortButton: { fontSize: moderateScale(14), color: '#007bff', fontWeight: '600', marginRight: moderateScale(12) },
@@ -461,4 +479,36 @@ const styles = StyleSheet.create({
   exportText: { color: '#28a745', fontWeight: '600' },
   pickerContainerColorful: { borderWidth: 1, borderColor: '#007bff', borderRadius: moderateScale(6), marginBottom: moderateScale(12) },
   orderImage: { width: '100%', height: moderateScale(180), marginTop: 10, borderRadius: moderateScale(8) },
+  modalContentOrder: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: moderateScale(12),
+    padding: moderateScale(20),
+    elevation: 8,
+    alignSelf: 'center',
+  },
+  orderTitle: {
+    fontSize: moderateScale(20),
+    fontWeight: 'bold',
+    marginBottom: moderateScale(12),
+    textAlign: 'center',
+    color: '#d6336c',
+  },
+  orderText: {
+    fontSize: moderateScale(14),
+    color: '#333',
+    marginBottom: moderateScale(4),
+  },
+  closeOrderButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: moderateScale(14),
+    borderRadius: moderateScale(8),
+    marginTop: moderateScale(16),
+  },
+  closeOrderButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: moderateScale(16),
+  },
 });
