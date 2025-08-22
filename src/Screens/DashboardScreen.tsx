@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   RefreshControl,
   Text,
-  Platform,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
 import {
@@ -17,6 +16,7 @@ import {
 import { DashboardInfoCard } from '../Component/DashboardInfoCard';
 import { useUserStore } from '../stores/useUserStore';
 import { useTruckStore } from '../stores/useTruckStore';
+import { getToken } from '../services/authStorage';
 import { baseUrl } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
 
@@ -24,19 +24,25 @@ export const DashboardScreen = ({ navigation }) => {
   const user = useUserStore((state) => state.user);
   const userRole = user?.userrole;
   const [loadingOrderId, setLoadingOrderId] = useState(null);
-
-
   const [jobData, setJobData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [allUsersCount, setAllUsersCount] = useState<number | null>(null);
+  const [allDriversCount, setAllDriversCount] = useState<number | null>(null);
 
   const fetchTrucksByDriverId = useTruckStore((state) => state.fetchTrucksByDriverId);
   const trucks = useTruckStore((state) => state.trucks);
+
+  const unassignedJobsCount = useMemo(
+    () => jobData.filter(job => job.status.toLowerCase() === 'assign').length,
+    [jobData]
+  );
 
   useEffect(() => {
     if (userRole === 2 && user?.userid) {
       fetchTrucksByDriverId(user.userid);
     } else {
       fetchJobs();
+      fetchAllUsersAndDriversCount();
     }
   }, []);
 
@@ -51,8 +57,7 @@ export const DashboardScreen = ({ navigation }) => {
     try {
       const response = await fetch(`${baseUrl}/api/orders`);
       const data = await response.json();
-      const transformed = transformJobData(data);
-      setJobData(transformed);
+      setJobData(transformJobData(data));
     } catch (err) {
       console.error('❌ Failed to fetch jobs:', err);
     }
@@ -62,8 +67,7 @@ export const DashboardScreen = ({ navigation }) => {
     try {
       const response = await fetch(`${baseUrl}/api/orders/vehicle/${vehicleNumber}`);
       const data = await response.json();
-      const transformed = transformJobData(data);
-      setJobData(transformed);
+      setJobData(transformJobData(data));
     } catch (err) {
       console.error('❌ Failed to fetch jobs by vehicle:', err);
     }
@@ -91,6 +95,31 @@ export const DashboardScreen = ({ navigation }) => {
       }));
   };
 
+  const fetchAllUsersAndDriversCount = async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      // Fetch Customers (userrole 2)
+      const customersRes = await fetch(`${baseUrl}/api/users/count/3`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const customersData = await customersRes.json();
+      setAllUsersCount(customersData.count || 0);
+
+      // Fetch Drivers (userrole 3)
+      const driversRes = await fetch(`${baseUrl}/api/users/count/2`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const driversData = await driversRes.json();
+      setAllDriversCount(driversData.count || 0);
+    } catch (err) {
+      console.error('❌ Failed to fetch users/drivers count:', err);
+      setAllUsersCount(0);
+      setAllDriversCount(0);
+    }
+  };
+
   const updateOrderStatus = async (orderId, status) => {
     try {
       const response = await fetch(`${baseUrl}/api/orders/${orderId}/status`, {
@@ -98,7 +127,6 @@ export const DashboardScreen = ({ navigation }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-
       if (!response.ok) throw new Error(`Failed to update status to ${status}`);
 
       if (userRole === 2 && trucks.length > 0) {
@@ -112,57 +140,41 @@ export const DashboardScreen = ({ navigation }) => {
   };
 
   const uploadImage = async (file) => {
-  const data = new FormData();
-  data.append('file', {
-    uri: file.uri,
-    type: file.type,
-    name: file.name,
-  });
-  data.append('upload_preset', 'bricksync');
-
-  try {
-    const res = await fetch('https://api.cloudinary.com/v1_1/dcr678fn4/image/upload', {
-      method: 'POST',
-      body: data,
+    const data = new FormData();
+    data.append('file', {
+      uri: file.uri,
+      type: file.type,
+      name: file.name,
     });
+    data.append('upload_preset', 'bricksync');
 
-    const result = await res.json();
-
-    if (!res.ok) {
-      console.error('❌ Cloudinary Error:', result);
+    try {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dcr678fn4/image/upload', {
+        method: 'POST',
+        body: data,
+      });
+      const result = await res.json();
+      return res.ok ? result.secure_url : null;
+    } catch (error) {
+      console.error('❌ Network Error uploading image:', error);
       return null;
     }
-
-    console.log('✅ Uploaded Image URL:', result.secure_url);
-    return result.secure_url;
-  } catch (error) {
-    console.error('❌ Network Error uploading image:', error);
-    return null;
-  }
-};
-
+  };
 
   const uploadDeliveryFile = async (orderId) => {
     try {
       setLoadingOrderId(orderId);
-      const res = await DocumentPicker.pickSingle({
-        type: [DocumentPicker.types.images],
-      });
-
+      const res = await DocumentPicker.pickSingle({ type: [DocumentPicker.types.images] });
       const uploadedUrl = await uploadImage(res);
       if (uploadedUrl) {
         await markOrderAsDelivered(orderId, uploadedUrl);
-        if (userRole === 2 && trucks.length > 0) {
-          await fetchJobsByVehicle(trucks[0]?.number);
-        } else {
-          await fetchJobs();
-        }
+        userRole === 2 && trucks.length > 0
+          ? await fetchJobsByVehicle(trucks[0]?.number)
+          : await fetchJobs();
       }
     } catch (error) {
-      if (!DocumentPicker.isCancel(error)) {
-        console.error('Error selecting or uploading file:', error);
-      }
-    }finally{
+      if (!DocumentPicker.isCancel(error)) console.error(error);
+    } finally {
       setLoadingOrderId(null);
     }
   };
@@ -263,10 +275,9 @@ export const DashboardScreen = ({ navigation }) => {
             />
           </View>
           <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>No Pending Orders</Text>
+            <Text style={styles.noDataText}>No Pending Orders</Text>
+          </View>
         </View>
-        </View>
-
       ) : (
         <>
           <View style={styles.cardRow}>
@@ -274,13 +285,14 @@ export const DashboardScreen = ({ navigation }) => {
               height={120}
               icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/2965/2965567.png' }}
               title="All Jobs"
-              value={23}
+              value={jobData.length}
             />
+
             <DashboardInfoCard
               height={120}
               icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' }}
-              title="Completed Jobs"
-              value={234}
+              title="Unassigned Jobs"
+              value={unassignedJobsCount}
             />
           </View>
 
@@ -288,14 +300,14 @@ export const DashboardScreen = ({ navigation }) => {
             <DashboardInfoCard
               height={120}
               icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/847/847969.png' }}
-              title="All Users"
-              value={12}
+              title="Customers"
+              value={allUsersCount ?? '...'}
             />
             <DashboardInfoCard
               height={120}
               icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/743/743007.png' }}
               title="Drivers"
-              value={23}
+              value={allDriversCount ?? '...'}
             />
           </View>
 
