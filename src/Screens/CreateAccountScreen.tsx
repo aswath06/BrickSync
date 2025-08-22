@@ -11,12 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useAccountStore } from '../stores/useAccountStore';
-import {
-  baseUrl,
-  SendOtpWhatsappEndpoint,
-  VerifyOtpEndpoint,
-  RegisterEndpoint,
-} from '../../config';
+import { baseUrl, RegisterEndpoint } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
 
 export const CreateAccountScreen = ({ navigation, route }) => {
@@ -25,28 +20,19 @@ export const CreateAccountScreen = ({ navigation, route }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [verifiedPhone, setVerifiedPhone] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordMatchError, setPasswordMatchError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [verifyingPhone, setVerifyingPhone] = useState(false);
-
 
   const setAccount = useAccountStore((state) => state.setAccount);
 
   useEffect(() => {
-    const params = route?.params || {};
-    if (params.verified && params.type === 'phone') {
-      setVerifiedPhone(true);
-      setPhone(params.contact || '');
-      setAccount({ verifiedPhone: true, phone: params.contact });
-    }
-
     const account = useAccountStore.getState().account;
     setName(account.name || '');
     setEmail(account.email || '');
     setPassword(account.password || '');
     setConfirmPassword(account.confirmPassword || '');
+    setPhone(account.phone || '');
   }, [route?.params]);
 
   const isValidEmail = (email) =>
@@ -61,106 +47,9 @@ export const CreateAccountScreen = ({ navigation, route }) => {
     confirmPassword.trim() !== '' &&
     password === confirmPassword &&
     isStrongPassword(password) &&
-    verifiedPhone &&
     isValidEmail(email);
 
   const generateUserId = () => `user_${Math.random().toString(36).substr(2, 9)}`;
-
-  // const handleVerifyPhone = async () => {
-  //   if (phone.length !== 10) {
-  //     Alert.alert('Error', 'Enter a valid 10-digit phone number');
-  //     return;
-  //   }
-
-  //   try {
-  //     const res = await fetch(`${baseUrl}${SendOtpWhatsappEndpoint}`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({ phone }),
-  //     });
-
-  //     const data = await res.json();
-
-  //     if (!res.ok) {
-  //       Alert.alert('Failed', data.message || 'Failed to send OTP');
-  //       return;
-  //     }
-
-  //     setAccount({
-  //       name,
-  //       email,
-  //       phone,
-  //       password,
-  //       confirmPassword,
-  //       verifiedPhone: false,
-  //     });
-
-  //     navigation.navigate('Otp', {
-  //       contact: phone,
-  //       type: 'phone',
-  //       source: 'create',
-  //       name,
-  //       email,
-  //       password,
-  //       confirmPassword,
-  //     });
-  //   } catch (err) {
-  //     console.error('OTP send error:', err);
-  //     Alert.alert('Error', 'Network error while sending OTP');
-  //   }
-  // };
-  const handleVerifyPhone = async () => {
-  if (phone.length !== 10) {
-    Alert.alert('Error', 'Enter a valid 10-digit phone number');
-    return;
-  }
-
-  setVerifyingPhone(true); // ✅ Start loading
-
-  try {
-    const res = await fetch(`${baseUrl}${SendOtpWhatsappEndpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ phone }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      Alert.alert('Failed', data.message || 'Failed to send OTP');
-      return;
-    }
-
-    setAccount({
-      name,
-      email,
-      phone,
-      password,
-      confirmPassword,
-      verifiedPhone: false,
-    });
-
-    navigation.navigate('Otp', {
-      contact: phone,
-      type: 'phone',
-      source: 'create',
-      name,
-      email,
-      password,
-      confirmPassword,
-    });
-  } catch (err) {
-    console.error('OTP send error:', err);
-    Alert.alert('Error', 'Network error while sending OTP');
-  } finally {
-    setVerifyingPhone(false); // ✅ Stop loading
-  }
-};
-
 
   const handleRegister = async () => {
     if (loading) return;
@@ -174,7 +63,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
       phone,
       password,
       confirmPassword,
-      verifiedPhone,
+      verifiedPhone: true, // always true
     });
 
     const payload = {
@@ -226,7 +115,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Name</Text>
           <TextInput
             placeholder="Enter Your Name"
-            placeholderTextColor="#888" 
+            placeholderTextColor="#888"
             value={name}
             onChangeText={(val) => {
               setName(val);
@@ -240,7 +129,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Email Id (Optional)</Text>
           <TextInput
             placeholder="Enter your Email"
-            placeholderTextColor="#888" 
+            placeholderTextColor="#888"
             value={email}
             onChangeText={(val) => {
               setEmail(val);
@@ -258,38 +147,17 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <View style={styles.inlineInput}>
             <TextInput
               placeholder="Enter your Phone Number"
-              placeholderTextColor="#888" 
+              placeholderTextColor="#888"
               value={phone}
               onChangeText={(text) => {
                 const cleaned = text.replace(/[^0-9]/g, '');
-                if (cleaned !== phone) {
-                  setVerifiedPhone(false);
-                }
                 setPhone(cleaned);
-                setAccount({ phone: cleaned, verifiedPhone: false });
+                setAccount({ phone: cleaned, verifiedPhone: true });
               }}
               style={styles.inlineTextInput}
               keyboardType="phone-pad"
               maxLength={10}
             />
-            {phone.length === 10 && (
-              // <TouchableOpacity onPress={handleVerifyPhone} disabled={verifiedPhone}>
-              //   <Text style={[styles.verifyText, verifiedPhone && styles.verified]}>
-              //     {verifiedPhone ? 'Verified' : 'Verify'}
-              //   </Text>
-              // </TouchableOpacity>
-              <TouchableOpacity onPress={handleVerifyPhone} disabled={verifiedPhone || verifyingPhone}>
-  {verifyingPhone ? (
-    <ActivityIndicator size="small" color="#007bff" />
-  ) : (
-    <Text style={[styles.verifyText, verifiedPhone && styles.verified]}>
-      {verifiedPhone ? 'Verified' : 'Verify'}
-    </Text>
-  )}
-</TouchableOpacity>
-
-
-            )}
           </View>
         </View>
 
@@ -297,7 +165,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Password</Text>
           <TextInput
             placeholder="Minimum 8 characters"
-            placeholderTextColor="#888" 
+            placeholderTextColor="#888"
             value={password}
             onChangeText={(val) => {
               setPassword(val);
@@ -316,7 +184,7 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           <Text style={styles.label}>Confirm password</Text>
           <TextInput
             placeholder="Confirm your password"
-            placeholderTextColor="#888" 
+            placeholderTextColor="#888"
             value={confirmPassword}
             onChangeText={(val) => {
               setConfirmPassword(val);
@@ -335,14 +203,13 @@ export const CreateAccountScreen = ({ navigation, route }) => {
           onPress={handleRegister}
         >
           {loading ? (
-  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
-    <Text style={styles.requestBtnText}>Registering...</Text>
-  </View>
-) : (
-  <Text style={styles.requestBtnText}>Register</Text>
-)}
-
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.requestBtnText}>Registering...</Text>
+            </View>
+          ) : (
+            <Text style={styles.requestBtnText}>Register</Text>
+          )}
         </TouchableOpacity>
 
         <Text style={styles.footerText}>
@@ -366,7 +233,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: moderateScale(6),
     marginTop: moderateScale(50),
-    color:'black'
+    color: 'black',
   },
   subtitle: {
     color: 'gray',
@@ -402,13 +269,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: moderateScale(10),
     height: '100%',
-  },
-  verifyText: {
-    color: '#007bff',
-    fontWeight: '600',
-  },
-  verified: {
-    color: 'green',
   },
   requestBtn: {
     backgroundColor: '#007bff',

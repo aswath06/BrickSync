@@ -12,6 +12,7 @@ import {
   Platform,
   Linking,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
@@ -62,41 +63,53 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
 
   const [orderModalVisible, setOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Statement | null>(null);
+  const [loadingOrder, setLoadingOrder] = useState(false);
 
+  // Initialize statements
   useEffect(() => {
     const init = async () => {
       try {
-        await AsyncStorage.setItem('statements', JSON.stringify(statements));
-      } catch {}
-      setVisibleStatements(statements.slice(0, PAGE_SIZE));
+        const safeStatements = Array.isArray(statements) ? statements : [];
+        await AsyncStorage.setItem('statements', JSON.stringify(safeStatements));
+        setVisibleStatements(safeStatements.slice(0, PAGE_SIZE));
+      } catch (err) {
+        console.error('AsyncStorage error:', err);
+      }
     };
     init();
   }, [statements]);
 
+  // Pagination
   const loadMore = () => {
     const nextPage = page + 1;
-    const newItems = statements.slice(0, nextPage * PAGE_SIZE);
+    const newItems = Array.isArray(statements)
+      ? statements.slice(0, nextPage * PAGE_SIZE)
+      : [];
     if (newItems.length > visibleStatements.length) {
       setPage(nextPage);
       setVisibleStatements(newItems);
     }
   };
 
+  // Refresh statements from backend
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch(`${baseUrl}/api/users/orders/${userId}`);
-      if (!res.ok) throw new Error('Failed to fetch orders');
+      const res = await fetch(`${baseUrl}/api/users/statements/${userId}`);
+      if (!res.ok) throw new Error('Failed to fetch statements');
       const data = await res.json();
-      setVisibleStatements(data.slice(0, PAGE_SIZE));
-      await AsyncStorage.setItem('statements', JSON.stringify(data));
-    } catch (err) {
+      const statementsArray = Array.isArray(data) ? data : data.statements ?? [];
+      setVisibleStatements(statementsArray.slice(0, PAGE_SIZE));
+      await AsyncStorage.setItem('statements', JSON.stringify(statementsArray));
+    } catch (err: any) {
       console.error(err);
+      Alert.alert('Error', err.message || 'Failed to fetch statements');
     }
     setPage(1);
     setRefreshing(false);
   };
 
+  // Add received statement
   const handleAddStatement = async () => {
     try {
       const payload = {
@@ -113,15 +126,27 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
 
       if (!res.ok) throw new Error(await res.text());
 
-      Alert.alert('Success', 'Statement added!');
-      setModalVisible(false);
+      const newStatement: Statement = {
+        date: new Date().toISOString(),
+        amount: payload.amount,
+        modeOfPayment: payload.modeOfPayment,
+        typeOfPayment: payload.typeOfPayment,
+      };
+
+      // Update visibleStatements and refresh filtered list
+      setVisibleStatements(prev => [newStatement, ...prev]);
+      applyFilter();
+
       setAmount('');
-      onRefresh();
+      setModalVisible(false);
+
+      Alert.alert('Success', 'Statement added!');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Something went wrong');
     }
   };
 
+  // Apply search and sort
   const applyFilter = () => {
     const data = [...visibleStatements];
     const filtered = data.filter(
@@ -141,6 +166,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
     applyFilter();
   }, [searchText, sortBy, visibleStatements]);
 
+  // Export CSV
   const exportToCSV = async () => {
     try {
       const data = filteredStatements.length > 0 ? filteredStatements : visibleStatements;
@@ -178,15 +204,20 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
     }
   };
 
+  // Fetch order details
   const handleOrderPress = async (orderId: string) => {
     try {
-      const res = await fetch(`https://bricksyncbackend-1.onrender.com/api/orders/${orderId}`);
+      setLoadingOrder(true);
+      const res = await fetch(`${baseUrl}/api/orders/${orderId}`);
       if (!res.ok) throw new Error('Failed to fetch order details');
       const data = await res.json();
 
       const orderDetails: Statement = {
         date: data.createdAt,
-        amount: data.products.reduce((acc, p) => acc + parseFloat(p.price) * parseFloat(p.quantity), 0),
+        amount: data.products.reduce(
+          (acc: number, p: any) => acc + parseFloat(p.price) * parseFloat(p.quantity),
+          0
+        ),
         orderId: data.orderId,
         modeOfPayment: 'Order',
         products: data.products,
@@ -199,25 +230,34 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       setOrderModalVisible(true);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to fetch order');
+    } finally {
+      setLoadingOrder(false);
     }
   };
 
+  // Render each row
   const renderItem = ({ item }: { item: Statement }) => (
     <View style={styles.row}>
       <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
       <Text style={styles.cell}>{item.modeOfPayment}</Text>
-      <Text style={styles.cell}>
-        {item.modeOfPayment === 'Received' ? (
-          item.typeOfPayment ?? '-'
-        ) : item.orderId ? (
-          <TouchableOpacity onPress={() => handleOrderPress(item.orderId!)}>
-            <Text style={{ color: '#007bff' }}>{item.orderId}</Text>
-          </TouchableOpacity>
-        ) : (
-          '-'
-        )}
+      <Text
+        style={[styles.cell, { flex: 2, color: item.modeOfPayment === 'Order' ? '#007bff' : '#333' }]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        onPress={() => item.orderId && handleOrderPress(item.orderId)}
+      >
+        {item.modeOfPayment === 'Received'
+          ? item.typeOfPayment ?? '-'
+          : item.modeOfPayment === 'Order' && item.orderId
+          ? item.orderId
+          : item.typeOfPayment ?? '-'}
       </Text>
-      <Text style={[styles.cell, { color: item.modeOfPayment === 'Order' ? 'red' : 'green' }]}>
+      <Text
+        style={[
+          styles.cell,
+          { color: item.modeOfPayment === 'Order' ? 'red' : 'green', fontWeight: 'bold' },
+        ]}
+      >
         ₹{item.amount}
       </Text>
     </View>
@@ -277,7 +317,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       />
 
       {/* Add Received Amount Modal */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+      <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentTall}>
             <Text style={styles.modalTitleColorful}>Add Received Amount</Text>
@@ -293,7 +333,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
 
             <Text style={{ marginBottom: 6, fontWeight: '600', color: '#333' }}>Type of Payment</Text>
             <View style={styles.pickerContainerColorful}>
-              <Picker selectedValue={typeOfPayment} onValueChange={(v) => setTypeOfPayment(v)} mode="dropdown">
+              <Picker selectedValue={typeOfPayment} onValueChange={setTypeOfPayment} mode="dropdown">
                 <Picker.Item label="Cash" value="Cash" />
                 <Picker.Item label="Bank" value="Bank" />
                 <Picker.Item label="UPI" value="UPI" />
@@ -302,10 +342,16 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
             </View>
 
             <View style={styles.modalButtonsTall}>
-              <TouchableOpacity style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]} onPress={handleAddStatement}>
+              <TouchableOpacity
+                style={[styles.modalButtonTall, { backgroundColor: '#28a745' }]}
+                onPress={handleAddStatement}
+              >
                 <Text style={styles.modalButtonText}>Submit</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={[styles.modalButtonTall, { backgroundColor: '#dc3545' }]}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -314,12 +360,17 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       </Modal>
 
       {/* Order Details Modal */}
-      <Modal animationType="slide" transparent={true} visible={orderModalVisible} onRequestClose={() => setOrderModalVisible(false)}>
+      <Modal
+        animationType="slide"
+        transparent
+        visible={orderModalVisible}
+        onRequestClose={() => setOrderModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Order Details</Text>
-
-            {selectedOrder && (
+            {loadingOrder ? (
+              <ActivityIndicator size="large" color="#007bff" style={{ marginVertical: 40 }} />
+            ) : selectedOrder ? (
               <View>
                 <Text>Order ID: {selectedOrder.orderId}</Text>
                 <Text>Vehicle No: {selectedOrder.vehicleNo ?? '-'}</Text>
@@ -332,35 +383,38 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
                 ))}
                 <Text>Status: {selectedOrder.status ?? '-'}</Text>
                 <Text>Date: {new Date(selectedOrder.date).toLocaleString()}</Text>
-
                 {selectedOrder.image && (
                   <>
                     <Text style={{ marginTop: 10, fontWeight: '600' }}>Order Image:</Text>
-                    <Image source={{ uri: selectedOrder.image }} style={styles.orderImage} resizeMode="contain" />
-                    <Text style={{ fontSize: 10, color: '#555', marginTop: 4 }}>*Click image to open in browser</Text>
+                    <Image
+                      source={{ uri: selectedOrder.image }}
+                      style={styles.orderImage}
+                      resizeMode="contain"
+                    />
                     <TouchableOpacity onPress={() => Linking.openURL(selectedOrder.image)}>
-                      <Text style={{ color: '#007bff', marginTop: 4, textDecorationLine: 'underline' }}>Open Full Image</Text>
+                      <Text style={{ color: '#007bff', marginTop: 4, textDecorationLine: 'underline' }}>
+                        Open Full Image
+                      </Text>
                     </TouchableOpacity>
                   </>
                 )}
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: '#dc3545', marginTop: 12 }]}
+                  onPress={() => setOrderModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Close</Text>
+                </TouchableOpacity>
               </View>
-            )}
-
-            <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#dc3545', marginTop: 12 }]} onPress={() => setOrderModalVisible(false)}>
-              <Text style={styles.modalButtonText}>Close</Text>
-            </TouchableOpacity>
+            ) : null}
           </View>
         </View>
       </Modal>
     </View>
   );
 };
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: moderateScale(16),
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, padding: moderateScale(16), backgroundColor: '#fff' },
   pageTitle: {
     fontSize: moderateScale(22),
     fontWeight: 'bold',
@@ -369,113 +423,42 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: moderateScale(30),
   },
-  userInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: moderateScale(12),
-  },
+  userInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: moderateScale(12) },
   userName: { fontSize: moderateScale(18), fontWeight: '600', color: '#333' },
   userPhone: { fontSize: moderateScale(14), color: '#777' },
-  actionButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: moderateScale(6),
-    paddingHorizontal: moderateScale(12),
-    borderRadius: moderateScale(6),
-  },
+  actionButton: { backgroundColor: '#007bff', paddingVertical: moderateScale(6), paddingHorizontal: moderateScale(12), borderRadius: moderateScale(6) },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: moderateScale(14) },
-  balanceText: {
-    fontSize: moderateScale(16),
-    fontWeight: 'bold',
-    marginBottom: moderateScale(12),
-    color: '#444',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: moderateScale(6),
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: moderateScale(8),
-    marginBottom: moderateScale(12),
-  },
-  headerRow: {
-    flexDirection: 'row',
-    backgroundColor: '#eaeaea',
-    paddingVertical: moderateScale(8),
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-  },
-  headerCell: {
-    flex: 1,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    fontSize: moderateScale(13),
-  },
+  balanceText: { fontSize: moderateScale(16), fontWeight: 'bold', marginBottom: moderateScale(12), color: '#444' },
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(6), paddingHorizontal: moderateScale(12), paddingVertical: moderateScale(8), marginBottom: moderateScale(12) },
+  headerRow: { flexDirection: 'row', backgroundColor: '#eaeaea', paddingVertical: moderateScale(8), borderBottomWidth: 1, borderColor: '#ccc' },
+  headerCell: { flex: 1, fontWeight: 'bold', textAlign: 'center', fontSize: moderateScale(13) },
   row: {
     flexDirection: 'row',
     paddingVertical: moderateScale(8),
     borderBottomWidth: 1,
     borderColor: '#f0f0f0',
-  },
-  cell: { flex: 1, textAlign: 'center', fontSize: moderateScale(13), color: '#333' },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
-    width: '85%',
-    backgroundColor: '#fff',
-    borderRadius: moderateScale(10),
-    padding: moderateScale(20),
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: moderateScale(18),
-    fontWeight: 'bold',
-    marginBottom: moderateScale(12),
+  cell: {
+    flex: 1,
     textAlign: 'center',
+    fontSize: moderateScale(13),
+    color: '#333',
+    flexShrink: 1,
   },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '85%', backgroundColor: '#fff', borderRadius: moderateScale(10), padding: moderateScale(20), elevation: 5 },
+  modalContentTall: { width: '90%', backgroundColor: '#ffe4e1', borderRadius: moderateScale(12), padding: moderateScale(25), elevation: 8, maxHeight: '80%', justifyContent: 'center' },
+  modalTitle: { fontSize: moderateScale(18), fontWeight: 'bold', marginBottom: moderateScale(12), textAlign: 'center' },
+  modalTitleColorful: { fontSize: moderateScale(20), fontWeight: 'bold', marginBottom: moderateScale(16), textAlign: 'center', color: '#d6336c' },
+  modalButtonsTall: { flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(16) },
+  modalButtonTall: { flex: 1, paddingVertical: moderateScale(14), marginHorizontal: moderateScale(6), borderRadius: moderateScale(8) },
   modalButton: { flex: 1, padding: moderateScale(10), marginHorizontal: moderateScale(5), borderRadius: moderateScale(6) },
   modalButtonText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
   sortRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: moderateScale(12) },
-  sortButton: { color: '#555', fontWeight: 'bold' },
-  activeSort: { color: '#007bff', textDecorationLine: 'underline' },
-  exportText: { color: '#28a745', fontWeight: 'bold' },
-  pickerContainer: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(6), marginBottom: moderateScale(12) },
-  orderImage: {
-    width: '100%',
-    height: moderateScale(200),
-    borderRadius: moderateScale(8),
-    marginTop: moderateScale(6),
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  modalContentTall: {
-    width: '90%',
-    backgroundColor: '#ffe4e1',
-    borderRadius: moderateScale(12),
-    padding: moderateScale(25),
-    elevation: 8,
-    maxHeight: '80%',
-    justifyContent: 'center',
-  },
-  modalTitleColorful: {
-    fontSize: moderateScale(20),
-    fontWeight: 'bold',
-    marginBottom: moderateScale(16),
-    textAlign: 'center',
-    color: '#d6336c',
-  },
-  pickerContainerColorful: {
-    borderWidth: 1,
-    borderColor: '#d6336c',
-    borderRadius: moderateScale(8),
-    marginBottom: moderateScale(16),
-    backgroundColor: '#fff0f5',
-  },
-  modalButtonsTall: { flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(16) },
-  modalButtonTall: { flex: 1, paddingVertical: moderateScale(14), marginHorizontal: moderateScale(6), borderRadius: moderateScale(8) },
+  sortButton: { fontSize: moderateScale(14), color: '#007bff', fontWeight: '600', marginRight: moderateScale(12) },
+  activeSort: { textDecorationLine: 'underline', color: '#d6336c' },
+  exportText: { color: '#28a745', fontWeight: '600' },
+  pickerContainerColorful: { borderWidth: 1, borderColor: '#007bff', borderRadius: moderateScale(6), marginBottom: moderateScale(12) },
+  orderImage: { width: '100%', height: moderateScale(180), marginTop: 10, borderRadius: moderateScale(8) },
 });
