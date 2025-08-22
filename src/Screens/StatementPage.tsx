@@ -11,6 +11,8 @@ import {
   RefreshControl,
   Platform,
   ActivityIndicator,
+  Image,
+  Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
@@ -50,11 +52,8 @@ const PAGE_SIZE = 1000;
 export const StatementPage: React.FC<Props> = ({ route }) => {
   const { statements, balance, username, phoneNumber, userId, userrole } = route.params;
 
-  useEffect(() => {
-    console.log('User Role:', userrole);
-  }, []);
-
   const [modalVisible, setModalVisible] = useState(false);
+  const [advanceModalVisible, setAdvanceModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
   const [typeOfPayment, setTypeOfPayment] = useState('Cash');
   const [visibleStatements, setVisibleStatements] = useState<Statement[]>([]);
@@ -68,7 +67,6 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   const [orderModalVisible, setOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Statement | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
-  const [advanceModalVisible, setAdvanceModalVisible] = useState(false);
 
   // Initialize statements
   useEffect(() => {
@@ -158,6 +156,38 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
     }
   };
 
+  const handleOrderPress = async (orderId: string) => {
+  try {
+    setLoadingOrder(true);
+    const res = await fetch(`${baseUrl}/api/orders/${orderId}`);
+    if (!res.ok) throw new Error('Failed to fetch order details');
+    const data = await res.json();
+
+    const orderDetails: Statement = {
+      date: data.createdAt,
+      amount: data.products.reduce(
+        (acc: number, p: any) => acc + parseFloat(p.price) * parseFloat(p.quantity),
+        0
+      ),
+      orderId: data.orderId,
+      modeOfPayment: 'Order',
+      products: data.products,
+      vehicleNo: data.vehicleNumber,
+      invoiceNo: data.invoiceNo,
+      status: data.status,
+      image: data.image,
+    };
+
+    setSelectedOrder(orderDetails);
+    setOrderModalVisible(true);
+  } catch (err: any) {
+    Alert.alert('Error', err.message || 'Failed to fetch order');
+  } finally {
+    setLoadingOrder(false);
+  }
+};
+
+
   // Apply search and sort
   const applyFilter = () => {
     const data = [...visibleStatements];
@@ -217,6 +247,13 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   };
 
   const renderItem = ({ item }: { item: Statement }) => (
+  <TouchableOpacity
+    onPress={() => {
+      if (item.modeOfPayment === 'Order' && item.orderId) {
+        handleOrderPress(item.orderId);
+      }
+    }}
+  >
     <View style={styles.row}>
       <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
       <Text style={styles.cell}>{item.modeOfPayment}</Text>
@@ -227,9 +264,7 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
       >
         {item.modeOfPayment === 'Received'
           ? item.typeOfPayment ?? '-'
-          : item.modeOfPayment === 'Order' && item.orderId
-          ? item.orderId
-          : item.typeOfPayment ?? '-'}
+          : item.orderId ?? '-'}
       </Text>
       <Text
         style={[
@@ -240,7 +275,10 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
         ₹{item.amount}
       </Text>
     </View>
-  );
+  </TouchableOpacity>
+);
+
+
 
   return (
     <View style={styles.container}>
@@ -397,20 +435,67 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
           </View>
         </View>
       </Modal>
+      <Modal
+        animationType="slide"
+        transparent
+        visible={orderModalVisible}
+        onRequestClose={() => setOrderModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentOrder}>
+            {loadingOrder ? (
+              <ActivityIndicator size="large" color="#007bff" style={{ marginVertical: 40 }} />
+            ) : selectedOrder ? (
+              <View style={{ maxHeight: '80%' }}>
+                <Text style={styles.orderTitle}>Order Details</Text>
+                <Text style={styles.orderText}>Order ID: {selectedOrder.orderId}</Text>
+                <Text style={styles.orderText}>Vehicle No: {selectedOrder.vehicleNo ?? '-'}</Text>
+                <Text style={styles.orderText}>Invoice No: {selectedOrder.invoiceNo ?? '-'}</Text>
+                <Text style={[styles.orderText, { marginTop: 10, fontWeight: '600' }]}>Products:</Text>
+                <View style={{ marginLeft: 8, marginTop: 4 }}>
+                  {selectedOrder.products?.map((p: any, i: number) => (
+                    <Text key={i} style={styles.orderText}>
+                      {i + 1}. {p.name} | Price: ₹{p.price} | Quantity: {p.quantity}
+                    </Text>
+                  ))}
+                </View>
+                <Text style={styles.orderText}>Status: {selectedOrder.status ?? '-'}</Text>
+                <Text style={styles.orderText}>Date: {new Date(selectedOrder.date).toLocaleString()}</Text>
+                {selectedOrder.image && (
+                  <>
+                    <Text style={{ marginTop: 12, fontWeight: '600' }}>Order Image:</Text>
+                    <Image
+                      source={{ uri: selectedOrder.image }}
+                      style={styles.orderImage}
+                      resizeMode="contain"
+                    />
+                    <TouchableOpacity onPress={() => Linking.openURL(selectedOrder.image)}>
+                      <Text style={{ color: '#007bff', marginTop: 4, textDecorationLine: 'underline' }}>
+                        Open Full Image
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                <TouchableOpacity
+                  style={styles.closeOrderButton}
+                  onPress={() => setOrderModalVisible(false)}
+                >
+                  <Text style={styles.closeOrderButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={{ textAlign: 'center', marginVertical: 40 }}>No order details available</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: moderateScale(16), backgroundColor: '#fff' },
-  pageTitle: {
-    fontSize: moderateScale(22),
-    fontWeight: 'bold',
-    marginBottom: moderateScale(16),
-    textAlign: 'center',
-    color: '#333',
-    marginTop: moderateScale(30),
-  },
+  pageTitle: { fontSize: moderateScale(22), fontWeight: 'bold', marginBottom: moderateScale(16), textAlign: 'center', color: '#333', marginTop: moderateScale(30) },
   userInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: moderateScale(12) },
   userName: { fontSize: moderateScale(18), fontWeight: '600', color: '#333' },
   userPhone: { fontSize: moderateScale(14), color: '#777' },
@@ -433,4 +518,36 @@ const styles = StyleSheet.create({
   sortButton: { fontSize: moderateScale(14), color: '#555', fontWeight: '500' },
   activeSort: { color: '#007bff', fontWeight: '700', textDecorationLine: 'underline' },
   exportText: { color: '#28a745', fontWeight: '700', fontSize: moderateScale(14) },
+  modalContentOrder: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: moderateScale(12),
+    padding: moderateScale(20),
+    elevation: 8,
+    alignSelf: 'center',
+  },
+  orderTitle: {
+    fontSize: moderateScale(20),
+    fontWeight: 'bold',
+    marginBottom: moderateScale(12),
+    textAlign: 'center',
+    color: '#d6336c',
+  },
+  orderText: {
+    fontSize: moderateScale(14),
+    color: '#333',
+    marginBottom: moderateScale(4),
+  },
+  closeOrderButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: moderateScale(14),
+    borderRadius: moderateScale(8),
+    marginTop: moderateScale(16),
+  },
+  closeOrderButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: moderateScale(16),
+  },
 });
