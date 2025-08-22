@@ -27,13 +27,11 @@ export const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const user = useUserStore((state) => state.user);
   const userRole = user?.userrole;
 
-  const fetchUsers = async (pageNumber = 1, isRefresh = false) => {
+  const fetchUsers = async () => {
     try {
       setError(null);
       const token = await getToken();
@@ -42,14 +40,9 @@ export const Profile = () => {
         return;
       }
 
-      const response = await fetch(
-        `${baseUrl}${RegisterEndpoint}?page=${pageNumber}&limit=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -59,45 +52,26 @@ export const Profile = () => {
 
       const data = await response.json();
       if (Array.isArray(data)) {
-        if (isRefresh || pageNumber === 1) {
-          setUsers(data);
-        } else {
-          setUsers((prev) => [...prev, ...data]);
-        }
-        setHasMore(data.length === 10); // Assume no more if less than 10
+        setUsers(data);
       } else {
         throw new Error('Invalid response format');
       }
     } catch (err: any) {
       console.error('Error:', err);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      await fetchUsers(1, true);
-      setPage(2);
-      setLoading(false);
-    };
-    load();
+    fetchUsers();
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchUsers(1, true);
-    setPage(2);
+    await fetchUsers();
     setRefreshing(false);
-  };
-
-  const loadMore = async () => {
-    if (!loading && hasMore && !refreshing) {
-      setLoading(true);
-      await fetchUsers(page);
-      setPage((prev) => prev + 1);
-      setLoading(false);
-    }
   };
 
   const getRoleLabel = (role: number) => {
@@ -116,15 +90,15 @@ export const Profile = () => {
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => {
+      onPress={() =>
         navigation.navigate('StatementPage', {
           statements: item.statements ?? [],
           balance: item.balance ?? 0,
           username: item.name,
           phoneNumber: item.phone,
           userId: item.userid,
-        });
-      }}
+        })
+      }
     >
       <View style={styles.imageContainer}>
         <Image
@@ -145,7 +119,7 @@ export const Profile = () => {
     </TouchableOpacity>
   );
 
-  if (loading && users.length === 0) {
+  if (loading && (!users || users.length === 0)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -153,15 +127,16 @@ export const Profile = () => {
     );
   }
 
-  const filteredUsers =
-    userRole === 1
+  const filteredUsers = Array.isArray(users)
+    ? userRole === 1
       ? users
-      : users.filter((u) => u.userrole === 1);
+      : users.filter((u) => u?.userrole === 1)
+    : [];
 
   const searchedUsers = filteredUsers.filter(
     (u) =>
-      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.phone?.toString().includes(searchQuery)
+      u?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u?.phone?.toString().includes(searchQuery)
   );
 
   return (
@@ -181,21 +156,14 @@ export const Profile = () => {
       ) : searchedUsers.length > 0 ? (
         <FlatList
           data={searchedUsers}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) =>
+            item.id?.toString() || Math.random().toString()
+          }
           renderItem={renderItem}
           numColumns={2}
           columnWrapperStyle={styles.row}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          onEndReachedThreshold={0.5}
-          onEndReached={loadMore}
-          ListFooterComponent={
-            hasMore && !refreshing ? (
-              <View style={{ paddingVertical: 20 }}>
-                <ActivityIndicator size="small" color="#0000ff" />
-              </View>
-            ) : null
           }
         />
       ) : (
