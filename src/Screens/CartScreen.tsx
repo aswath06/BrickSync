@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { ArrowBack } from '../assets';
 import { useProductStore } from '../stores/useProductStore';
@@ -19,18 +20,21 @@ import { baseUrl } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
 
 export const CartScreen = ({ navigation, route }) => {
-  const { cart, clearCart, updateCartItem } = useProductStore();
+  const { cart, clearCart, updateCartItem, removeCartItem } = useProductStore();
   const { users } = useAllUsersStore();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editQty, setEditQty] = useState('');
   const [editPrice, setEditPrice] = useState('');
+  const [transportCharge, setTransportCharge] = useState('0'); // transport charge state
+  const [loading, setLoading] = useState(false); // loading state for checkout
 
   const selectedCustomer = route?.params?.selectedCustomer;
   const customers = users.filter((user) => user.userrole === 3);
 
-  const totalAmount = cart.reduce((acc, item) => acc + item.total, 0);
+  const cartTotal = cart.reduce((acc, item) => acc + item.total, 0);
+  const grandTotal = cartTotal + parseFloat(transportCharge || '0'); // grand total includes transport
 
   const handleCheckout = async () => {
     if (!selectedCustomer) {
@@ -43,11 +47,14 @@ export const CartScreen = ({ navigation, route }) => {
       return;
     }
 
+    setLoading(true); // start loading
+
     const orderPayload = {
       orderId: `ORD${Date.now()}`,
       vehicleNumber: 'TN39CK1288',
       userId: selectedCustomer.userid,
       customerName: selectedCustomer.name,
+      transportCharge: parseFloat(transportCharge) || 0, // include transport in order payload
       products: cart.map((item) => ({
         id: item.product.id,
         name: item.product.name,
@@ -62,20 +69,20 @@ export const CartScreen = ({ navigation, route }) => {
         timeout: 5000,
       });
 
-      console.log('Response:', response.data);
-
       if (response.status === 200 || response.status === 201) {
         Alert.alert('Success', 'Order placed successfully!');
         clearCart();
+        setTransportCharge('0'); // reset transport charge
         navigation.navigate('DashboardScreen', { screen: 'Profile' });
       } else {
         Alert.alert('Error', 'Order could not be placed. Try again.');
       }
     } catch (error) {
-      console.error('Order error:', error.response?.data || error.message);
       const errorMessage =
         error.response?.data?.message || 'Something went wrong while placing the order.';
       Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false); // stop loading
     }
   };
 
@@ -105,7 +112,27 @@ export const CartScreen = ({ navigation, route }) => {
 
   const renderItem = ({ item, index }) => (
     <View style={styles.card}>
-      <Image source={{ uri: item.product.imageUrl }} style={styles.image} resizeMode="contain" />
+      <View style={{ position: 'relative' }}>
+        <Image source={{ uri: item.product.imageUrl }} style={styles.image} resizeMode="contain" />
+
+        {/* Delete Button */}
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() =>
+            Alert.alert(
+              'Remove Item',
+              'Are you sure you want to remove this item from the cart?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Yes', style: 'destructive', onPress: () => removeCartItem(item.product.id) },
+              ]
+            )
+          }
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>X</Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.productName}>{item.product.name}</Text>
       <Text style={styles.category}>Category: {item.product.category}</Text>
       {item.selectedType && <Text style={styles.subText}>Type: {item.selectedType}</Text>}
@@ -172,13 +199,44 @@ export const CartScreen = ({ navigation, route }) => {
             showsVerticalScrollIndicator={false}
           />
 
+          {/* Summary Container */}
           <View style={styles.summaryContainer}>
-            <Text style={styles.totalLabel}>Grand Total</Text>
-            <Text style={styles.totalValue}>₹{totalAmount}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.totalLabel}>Grand Total</Text>
+              <Text style={styles.totalValue}>₹{grandTotal}</Text>
+            </View>
+
+            {/* Transport charge input */}
+            <View style={{ flex: 1, marginLeft: moderateScale(10) }}>
+              <Text style={styles.totalLabel}>Transport Charge</Text>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#ccc',
+                  borderRadius: moderateScale(8),
+                  padding: moderateScale(6),
+                  fontSize: moderateScale(14),
+                  marginTop: moderateScale(4),
+                }}
+                keyboardType="numeric"
+                value={transportCharge}
+                onChangeText={setTransportCharge}
+                placeholder="0"
+              />
+            </View>
           </View>
 
-          <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
-            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+          {/* Checkout Button */}
+          <TouchableOpacity
+            style={[styles.checkoutButton, loading && { opacity: 0.7 }]}
+            onPress={handleCheckout}
+            disabled={loading} // prevent multiple taps
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
@@ -281,6 +339,18 @@ const styles = StyleSheet.create({
   cartList: { paddingBottom: moderateScale(20) },
   card: { backgroundColor: '#EAF1FB', borderRadius: moderateScale(16), padding: moderateScale(14), marginBottom: moderateScale(16) },
   image: { width: '100%', height: moderateScale(120), borderRadius: moderateScale(10), marginBottom: moderateScale(10) },
+  deleteButton: {
+    position: 'absolute',
+    top: moderateScale(8),
+    right: moderateScale(8),
+    backgroundColor: '#E53935',
+    width: moderateScale(28),
+    height: moderateScale(28),
+    borderRadius: moderateScale(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
   selectCustomerButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(8), paddingHorizontal: moderateScale(12), borderRadius: moderateScale(8), marginTop: moderateScale(8), alignSelf: 'flex-start' },
   selectCustomerText: { color: '#fff', fontSize: moderateScale(14), fontWeight: '500' },
   productName: { fontSize: moderateScale(15), fontWeight: '600', color: '#1E1E1E', marginBottom: moderateScale(4) },

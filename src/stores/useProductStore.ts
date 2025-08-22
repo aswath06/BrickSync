@@ -30,6 +30,7 @@ type ProductStore = {
   getProductById: (id: string) => Product | undefined;
   addToCart: (item: CartItem) => void;
   updateCartItem: (productId: string, newQuantity: number, newPrice: number) => void;
+  removeCartItem: (productId: string) => void; // ✅ new method
   clearCart: () => void;
 };
 
@@ -37,7 +38,7 @@ type ProductStore = {
 export const useProductStore = create<ProductStore>()(
   persist(
     (set, get) => ({
-      products: [], // will be filled via API or manually
+      products: [],
       cart: [],
 
       setProducts: (products) => set({ products }),
@@ -66,7 +67,7 @@ export const useProductStore = create<ProductStore>()(
         }
       },
 
-      // ✅ Update cart item (quantity + price)
+      // Update cart item (quantity + price)
       updateCartItem: (productId, newQuantity, newPrice) => {
         const updatedCart = get().cart.map((item) => {
           if (item.product.id === productId) {
@@ -79,6 +80,12 @@ export const useProductStore = create<ProductStore>()(
           }
           return item;
         });
+        set({ cart: updatedCart });
+      },
+
+      // ✅ Remove a single cart item
+      removeCartItem: (productId) => {
+        const updatedCart = get().cart.filter((item) => item.product.id !== productId);
         set({ cart: updatedCart });
       },
 
