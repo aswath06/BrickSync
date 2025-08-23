@@ -336,10 +336,11 @@ const styles = StyleSheet.create({
   },
   uploadBtn: {
     padding: moderateScale(10),
-    backgroundColor: 'blue',
+    backgroundColor: '#1577EA',
     borderRadius: moderateScale(8),
     marginBottom: moderateScale(10),
     alignItems: 'center',
+    color:'white',
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: moderateScale(8) },
   chip: {

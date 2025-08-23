@@ -11,6 +11,7 @@ import {
   Animated,
   TextInput,
   Modal,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { removeToken } from '../services/authStorage';
@@ -18,6 +19,7 @@ import { useUserStore } from '../stores/useUserStore';
 import axios from 'axios';
 import { moderateScale } from './utils/scalingUtils';
 import { baseUrl } from '../../config';
+import { useToggleStore } from '../stores/useToggleStore';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -38,6 +40,11 @@ export const Settings = () => {
   });
   const [loading, setLoading] = useState(false);
 
+  // Global language toggle
+  const isEnglish = useToggleStore((state) => state.isEnglish);
+  const setLanguage = useToggleStore((state) => state.setLanguage);
+
+  // Animate on mount
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
@@ -48,18 +55,22 @@ export const Settings = () => {
   const profileImage = 'https://cdn-icons-png.flaticon.com/512/4140/4140048.png';
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await removeToken();
-          clearUser();
-          navigation.reset({ index: 0, routes: [{ name: 'LoginScreen' }] });
+    Alert.alert(
+      isEnglish ? 'Logout' : 'வெளியேறு',
+      isEnglish ? 'Are you sure you want to logout?' : 'நீங்கள் வெளியில் செல்ல விரும்புகிறீர்களா?',
+      [
+        { text: isEnglish ? 'Cancel' : 'ரத்து செய்யவும்', style: 'cancel' },
+        {
+          text: isEnglish ? 'Logout' : 'வெளியேறு',
+          style: 'destructive',
+          onPress: async () => {
+            await removeToken();
+            clearUser();
+            navigation.reset({ index: 0, routes: [{ name: 'LoginScreen' }] });
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const handleEditPress = () => {
@@ -74,35 +85,42 @@ export const Settings = () => {
   };
 
   const handleSaveEdit = async () => {
-  setLoading(true);
-  try {
-    // Map 'dob' from formData to 'dateOfBirth' for backend
-    const payload = {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      dateOfBirth: formData.dob,
-      gender: formData.gender,
-    };
+    setLoading(true);
+    try {
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        dateOfBirth: formData.dob,
+        gender: formData.gender,
+      };
 
-    const response = await axios.put(`${baseUrl}/api/users/${user.id}`, payload, {
-      headers: { 'Content-Type': 'application/json' },
-    });
+      const response = await axios.put(`${baseUrl}/api/users/${user.id}`, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-    if (response.status === 200) {
-      setUser(response.data); // Update Zustand store
-      Alert.alert('Success', 'Profile updated successfully');
-      setEditModalVisible(false);
-    } else {
-      Alert.alert('Error', 'Failed to update profile');
+      if (response.status === 200) {
+        setUser(response.data);
+        Alert.alert(
+          isEnglish ? 'Success' : 'வெற்றி',
+          isEnglish ? 'Profile updated successfully' : 'சுயவிவரம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது'
+        );
+        setEditModalVisible(false);
+      } else {
+        Alert.alert(
+          isEnglish ? 'Error' : 'பிழை',
+          isEnglish ? 'Failed to update profile' : 'சுயவிவரத்தை புதுப்பிக்க முடியவில்லை'
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        isEnglish ? 'Error' : 'பிழை',
+        error.response?.data?.message || (isEnglish ? 'Something went wrong' : 'ஏதோ தவறு நடந்தது')
+      );
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    Alert.alert('Error', error.response?.data?.message || 'Something went wrong');
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleChange = (key, value) => {
     setFormData({ ...formData, [key]: value });
@@ -111,7 +129,7 @@ export const Settings = () => {
   return (
     <ScrollView contentContainerStyle={[styles.container, { minHeight: screenHeight }]}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>My Profile</Text>
+        <Text style={styles.headerText}>{isEnglish ? 'My Profile' : 'என் சுயவிவரம்'}</Text>
       </View>
 
       <Animated.View
@@ -131,19 +149,32 @@ export const Settings = () => {
         </View>
 
         <View style={styles.infoCard}>
-          <InfoRow label="Name" value={user?.name || 'Not available'} />
-          <InfoRow label="Email" value={user?.email || 'Not provided'} />
-          <InfoRow label="Phone" value={user?.phone || 'Not available'} />
-          <InfoRow label="Date of Birth" value={user?.dob || 'NA'} />
-          <InfoRow label="Gender" value={user?.gender || 'Male'} />
+          <InfoRow label={isEnglish ? 'Name' : 'பெயர்'} value={user?.name || (isEnglish ? 'Not available' : 'கிடைக்கவில்லை')} />
+          <InfoRow label={isEnglish ? 'Email' : 'மின்னஞ்சல்'} value={user?.email || (isEnglish ? 'Not provided' : 'கொடுக்கப்படவில்லை')} />
+          <InfoRow label={isEnglish ? 'Phone' : 'தொலைபேசி'} value={user?.phone || (isEnglish ? 'Not available' : 'கிடைக்கவில்லை')} />
+          <InfoRow label={isEnglish ? 'Date of Birth' : 'பிறந்த தேதி'} value={user?.dob || 'NA'} />
+          <InfoRow label={isEnglish ? 'Gender' : 'பாலினம்'} value={user?.gender || (isEnglish ? 'Male' : 'ஆண்')} />
+
+          {/* Language Toggle Switch */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: moderateScale(12) }}>
+            <Text style={{ fontSize: moderateScale(16), fontWeight: '600', color: '#000' }}>
+              {isEnglish ? 'English' : 'தமிழ்'}
+            </Text>
+            <Switch
+              value={isEnglish}
+              onValueChange={(value) => setLanguage(value)}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={isEnglish ? '#007AFF' : '#f4f3f4'}
+            />
+          </View>
         </View>
 
         <TouchableOpacity style={styles.editButton} onPress={handleEditPress}>
-          <Text style={styles.editText}>Edit Profile</Text>
+          <Text style={styles.editText}>{isEnglish ? 'Edit Profile' : 'சுயவிவரத்தை திருத்து'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>{isEnglish ? 'Logout' : 'வெளியேறு'}</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -151,18 +182,18 @@ export const Settings = () => {
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <Text style={styles.modalTitle}>{isEnglish ? 'Edit Profile' : 'சுயவிவரத்தை திருத்து'}</Text>
 
             <TextInput
               style={[styles.input, { color: '#000' }]}
-              placeholder="Name"
+              placeholder={isEnglish ? 'Name' : 'பெயர்'}
               placeholderTextColor="#888"
               value={formData.name}
               onChangeText={(text) => handleChange('name', text)}
             />
             <TextInput
               style={[styles.input, { color: '#000' }]}
-              placeholder="Email"
+              placeholder={isEnglish ? 'Email' : 'மின்னஞ்சல்'}
               placeholderTextColor="#888"
               keyboardType="email-address"
               value={formData.email}
@@ -170,7 +201,7 @@ export const Settings = () => {
             />
             <TextInput
               style={[styles.input, { color: '#000' }]}
-              placeholder="Phone"
+              placeholder={isEnglish ? 'Phone' : 'தொலைபேசி'}
               placeholderTextColor="#888"
               keyboardType="phone-pad"
               value={formData.phone}
@@ -178,14 +209,14 @@ export const Settings = () => {
             />
             <TextInput
               style={[styles.input, { color: '#000' }]}
-              placeholder="Date of Birth"
+              placeholder={isEnglish ? 'Date of Birth' : 'பிறந்த தேதி'}
               placeholderTextColor="#888"
               value={formData.dob}
               onChangeText={(text) => handleChange('dob', text)}
             />
             <TextInput
               style={[styles.input, { color: '#000' }]}
-              placeholder="Gender"
+              placeholder={isEnglish ? 'Gender' : 'பாலினம்'}
               placeholderTextColor="#888"
               value={formData.gender}
               onChangeText={(text) => handleChange('gender', text)}
@@ -193,10 +224,10 @@ export const Settings = () => {
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(16) }}>
               <TouchableOpacity style={styles.saveButton} onPress={handleSaveEdit} disabled={loading}>
-                <Text style={{ color: '#fff', fontWeight: '600' }}>{loading ? 'Saving...' : 'Save'}</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{loading ? (isEnglish ? 'Saving...' : 'சேமிக்கிறது...') : (isEnglish ? 'Save' : 'சேமி')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)} disabled={loading}>
-                <Text style={{ color: '#fff', fontWeight: '600' }}>Cancel</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{isEnglish ? 'Cancel' : 'ரத்து செய்யவும்'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -233,7 +264,7 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '85%', backgroundColor: '#fff', borderRadius: moderateScale(12), padding: moderateScale(20) },
   modalTitle: { fontSize: moderateScale(18), fontWeight: 'bold', marginBottom: moderateScale(16), color:'black' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(10), marginBottom: moderateScale(12), color: '#000' }, // Added color
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(10), marginBottom: moderateScale(12), color: '#000' },
   saveButton: { backgroundColor: '#4CAF50', padding: moderateScale(12), borderRadius: moderateScale(8), flex: 1, marginRight: moderateScale(8), alignItems: 'center' },
   cancelButton: { backgroundColor: '#F44336', padding: moderateScale(12), borderRadius: moderateScale(8), flex: 1, marginLeft: moderateScale(8), alignItems: 'center' },
 });

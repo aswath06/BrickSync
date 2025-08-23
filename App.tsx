@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Navigation } from './src/Navigations/Navigations';
+import { useToggleStore } from './src/stores/useToggleStore';
 
 function App(): React.JSX.Element {
+  const loadLanguage = useToggleStore((state) => state.loadLanguage);
+
+  useEffect(() => {
+    loadLanguage();
+  }, []);
+
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar
