@@ -11,10 +11,15 @@ export const BillScreen = ({ route }) => {
   const navigation = useNavigation();
   const { isEnglish } = useToggleStore();
 
+  // Helper to get product size
+  const getItemSize = (item) => item.selectedSize || item.size || item.type || '-';
+
+  // Render each product row
   const renderItem = ({ item, index }) => (
     <View style={styles.row}>
       <Text style={[styles.cell, { flex: 0.5 }]}>{index + 1}</Text>
-      <Text style={[styles.cell, { flex: 2 }]}>{item.name}</Text>
+      <Text style={[styles.cell, { flex: 1.5 }]}>{item.name}</Text>
+      <Text style={[styles.cell, { flex: 1 }]}>{getItemSize(item)}</Text>
       <Text style={[styles.cell, { flex: 1 }]}>{item.quantity}</Text>
       <Text style={[styles.cell, { flex: 1 }]}>{item.price}</Text>
       <Text style={[styles.cell, { flex: 1 }]}>{item.quantity * item.price}</Text>
@@ -25,12 +30,13 @@ export const BillScreen = ({ route }) => {
     order.products.reduce((acc, item) => acc + item.quantity * item.price, 0) +
     (order.transportCharge || 0);
 
+  // Handle sharing the bill
   const handleShare = async () => {
     try {
-      let billText = `${isEnglish ? 'Aswath Hollow Bricks & Lorry Service' : 'அஸ்வத் ஹாலோ பிரிக்ஸ் மற்றும் லாரி சேவை'}\nSS Tower, Pandian Nagar Bus Stop, Tiruppur - 641602\nMobile: 9843083521 / 9842048181\nEmail: maswath8812@gmail.com\n\n${isEnglish ? 'Invoice / Bill' : 'சரக்கு / விலைப்பட்டியல்'}\n\n${isEnglish ? 'Customer' : 'வாடிக்கையாளர்'}: ${order.customerName}\n${isEnglish ? 'Vehicle No' : 'வாகன எண்'}: ${order.vehicleNumber}\n${isEnglish ? 'Order ID' : 'ஆர்டர் எண்'}: ${order.orderId}\n${order.date ? `${isEnglish ? 'Date' : 'தேதி'}: ${order.date}\n` : ''}\n\n#  ${isEnglish ? 'Material' : 'பொருள்'}       ${isEnglish ? 'Qty' : 'அளவு'}   ${isEnglish ? 'Price' : 'விலை'}   ${isEnglish ? 'Subtotal' : 'மொத்தம்'}\n`;
+      let billText = `${isEnglish ? 'Aswath Hollow Bricks & Lorry Service' : 'அஸ்வத் ஹாலோ பிரிக்ஸ் மற்றும் லாரி சேவை'}\nSS Tower, Pandian Nagar Bus Stop, Tiruppur - 641602\nMobile: 9843083521 / 9842048181\nEmail: maswath8812@gmail.com\n\n${isEnglish ? 'Invoice / Bill' : 'சரக்கு / விலைப்பட்டியல்'}\n\n${isEnglish ? 'Customer' : 'வாடிக்கையாளர்'}: ${order.customerName}\n${isEnglish ? 'Vehicle No' : 'வாகன எண்'}: ${order.vehicleNumber}\n${isEnglish ? 'Order ID' : 'ஆர்டர் எண்'}: ${order.orderId}\n${order.date ? `${isEnglish ? 'Date' : 'தேதி'}: ${order.date}\n` : ''}\n\n#  ${isEnglish ? 'Material' : 'பொருள்'}       ${isEnglish ? 'Size' : 'வகை'}   ${isEnglish ? 'Qty' : 'அளவு'}   ${isEnglish ? 'Price' : 'விலை'}   ${isEnglish ? 'Subtotal' : 'மொத்தம்'}\n`;
 
       order.products.forEach((item, index) => {
-        billText += `${index + 1}  ${item.name}  ${item.quantity}  ${item.price}  ${item.quantity * item.price}\n`;
+        billText += `${index + 1}  ${item.name}  ${getItemSize(item)}  ${item.quantity}  ${item.price}  ${item.quantity * item.price}\n`;
       });
 
       billText += `\n${isEnglish ? 'Transport Charge' : 'போக்குவரத்து கட்டணம்'}: ₹${order.transportCharge}\n${isEnglish ? 'Grand Total' : 'மொத்தம்'}: ₹${totalAmount}\n\n${isEnglish ? 'Thank you for your business!' : 'உங்கள் வணிகத்திற்கு நன்றி!'}`;
@@ -64,8 +70,9 @@ export const BillScreen = ({ route }) => {
 
       {/* Table Header */}
       <View style={[styles.row, styles.headerRow]}>
-        <Text style={[styles.cell, { flex: 0.5, fontWeight: 'bold' }]}>#</Text>
-        <Text style={[styles.cell, { flex: 2, fontWeight: 'bold' }]}>{isEnglish ? 'Material' : 'பொருள்'}</Text>
+        <Text style={[styles.cell, { flex: 0.5, fontWeight: 'bold' }]}>SN</Text>
+        <Text style={[styles.cell, { flex: 1.5, fontWeight: 'bold' }]}>{isEnglish ? 'Material' : 'பொருள்'}</Text>
+        <Text style={[styles.cell, { flex: 1, fontWeight: 'bold' }]}>{isEnglish ? 'Size' : 'அளவு/வகை'}</Text>
         <Text style={[styles.cell, { flex: 1, fontWeight: 'bold' }]}>{isEnglish ? 'Qty' : 'அளவு'}</Text>
         <Text style={[styles.cell, { flex: 1, fontWeight: 'bold' }]}>{isEnglish ? 'Price' : 'விலை'}</Text>
         <Text style={[styles.cell, { flex: 1, fontWeight: 'bold' }]}>{isEnglish ? 'Subtotal' : 'மொத்தம்'}</Text>

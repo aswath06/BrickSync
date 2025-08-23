@@ -453,12 +453,13 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
                 <Text style={styles.orderText}>Invoice No: {selectedOrder.invoiceNo ?? '-'}</Text>
                 <Text style={[styles.orderText, { marginTop: 10, fontWeight: '600' }]}>Products:</Text>
                 <View style={{ marginLeft: 8, marginTop: 4 }}>
-                  {selectedOrder.products?.map((p: any, i: number) => (
-                    <Text key={i} style={styles.orderText}>
-                      {i + 1}. {p.name} | Price: ₹{p.price} | Quantity: {p.quantity}
-                    </Text>
-                  ))}
-                </View>
+  {selectedOrder.products?.map((p: any, i: number) => (
+    <Text key={i} style={styles.orderText}>
+      {i + 1}. {p.name} | Price: ₹{p.price} | Quantity: {p.quantity} | Size: {p.size ?? '-'}
+    </Text>
+  ))}
+</View>
+
                 {selectedOrder.transportCharge !== undefined && (
   <Text style={styles.orderText}>
     Transport Charge: ₹{selectedOrder.transportCharge}

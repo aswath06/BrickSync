@@ -54,6 +54,7 @@ export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs
       vehicleNumber: item.vehicleNumber,
       materials: item.materials,
       orderId: item.orderId,
+      
     });
   }
 };

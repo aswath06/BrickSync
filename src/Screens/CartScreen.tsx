@@ -41,7 +41,9 @@ export const CartScreen = ({ navigation, route }) => {
     if (!selectedCustomer) {
       Alert.alert(
         isEnglish ? 'Customer Required' : 'வாடிக்கையாளர் தேவை',
-        isEnglish ? 'Please select a customer before checking out.' : 'செக்கவுட் செய்யும் முன் ஒரு வாடிக்கையாளரைத் தேர்ந்தெடுக்கவும்.'
+        isEnglish
+          ? 'Please select a customer before checking out.'
+          : 'செக்கவுட் செய்யும் முன் ஒரு வாடிக்கையாளரைத் தேர்ந்தெடுக்கவும்.'
       );
       return;
     }
@@ -66,6 +68,7 @@ export const CartScreen = ({ navigation, route }) => {
         name: item.product.name,
         quantity: item.quantity,
         price: item.product.price,
+        size: item.selectedSize || null,
       })),
     };
 
@@ -87,7 +90,10 @@ export const CartScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || (isEnglish ? 'Something went wrong while placing the order.' : 'ஆர்டர் செய்யும் போது ஒரு பிழை ஏற்பட்டது.');
+        error.response?.data?.message ||
+        (isEnglish
+          ? 'Something went wrong while placing the order.'
+          : 'ஆர்டர் செய்யும் போது ஒரு பிழை ஏற்பட்டது.');
       Alert.alert(isEnglish ? 'Error' : 'பிழை', errorMessage);
     } finally {
       setLoading(false);
@@ -115,7 +121,9 @@ export const CartScreen = ({ navigation, route }) => {
     if (isNaN(price) || price <= 0) {
       Alert.alert(
         isEnglish ? 'Invalid Price' : 'தவறான விலை',
-        isEnglish ? 'Unit price must be a positive number.' : 'ஒரு பொருளின் விலை நேர்மறை எண்ணாக இருக்க வேண்டும்.'
+        isEnglish
+          ? 'Unit price must be a positive number.'
+          : 'ஒரு பொருளின் விலை நேர்மறை எண்ணாக இருக்க வேண்டும்.'
       );
       return;
     }
@@ -126,41 +134,47 @@ export const CartScreen = ({ navigation, route }) => {
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <View style={{ position: 'relative' }}>
-        <Image source={{ uri: item.product.imageUrl }} style={styles.image} resizeMode="contain" />
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() =>
-            Alert.alert(
-              isEnglish ? 'Remove Item' : 'பொருள் அகற்று',
-              isEnglish
-                ? 'Are you sure you want to remove this item from the cart?'
-                : 'இந்த பொருளை கார்டில் இருந்து அகற்ற விரும்புகிறீர்களா?',
-              [
-                { text: isEnglish ? 'Cancel' : 'ரத்து செய்', style: 'cancel' },
-                { text: isEnglish ? 'Yes' : 'ஆம்', style: 'destructive', onPress: () => removeCartItem(item.product.id) },
-              ]
-            )
-          }
-        >
-          <Text style={{ color: '#fff', fontWeight: 'bold' }}>X</Text>
-        </TouchableOpacity>
+      <Image source={{ uri: item.product.imageUrl }} style={styles.image} resizeMode="contain" />
+      <View style={styles.infoContainer}>
+        <Text style={styles.productName}>{item.product.name}</Text>
+        {item.selectedType && (
+          <Text style={styles.subText}>
+            {isEnglish ? 'Type' : 'வகை'}: {item.selectedSize}
+          </Text>
+        )}
+        <Text style={styles.subText}>
+          {isEnglish ? 'Unit Price' : 'ஒரு பொருளின் விலை'}: ₹{item.product.price}
+        </Text>
+        <Text style={styles.subText}>
+          {isEnglish ? 'Quantity' : 'அளவு'}: {item.quantity}
+        </Text>
+        <Text style={styles.totalPrice}>
+          {isEnglish ? 'Subtotal' : 'மொத்தம்'}: ₹{item.total}
+        </Text>
+        <View style={{ flexDirection: 'row', marginTop: moderateScale(6) }}>
+          <TouchableOpacity style={styles.editButton} onPress={() => handleEditItem(item)}>
+            <Text style={{ color: '#fff', fontWeight: '500' }}>{isEnglish ? 'Edit' : 'மாற்று'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.editButton, { backgroundColor: '#E53935', marginLeft: moderateScale(8) }]}
+            onPress={() =>
+              Alert.alert(
+                isEnglish ? 'Remove Item' : 'பொருள் அகற்று',
+                isEnglish
+                  ? 'Are you sure you want to remove this item from the cart?'
+                  : 'இந்த பொருளை கார்டில் இருந்து அகற்ற விரும்புகிறீர்களா?',
+                [
+                  { text: isEnglish ? 'Cancel' : 'ரத்து செய்', style: 'cancel' },
+                  { text: isEnglish ? 'Yes' : 'ஆம்', style: 'destructive', onPress: () => removeCartItem(item.product.id) },
+                ]
+              )
+            }
+          >
+            <Text style={{ color: '#fff', fontWeight: '500' }}>{isEnglish ? 'Remove' : 'அகற்று'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <Text style={styles.productName}>{item.product.name}</Text>
-      <Text style={styles.category}>{isEnglish ? 'Category' : 'வகை'}: {item.product.category}</Text>
-      {item.selectedType && <Text style={styles.subText}>{isEnglish ? 'Type' : 'வகை'}: {item.selectedType}</Text>}
-      {item.selectedSize && <Text style={styles.subText}>{isEnglish ? 'Size' : 'அளவு'}: {item.selectedSize}</Text>}
-      <Text style={styles.subText}>{isEnglish ? 'Unit Price' : 'ஒரு பொருளின் விலை'}: {item.product.price}</Text>
-      <Text style={styles.subText}>{isEnglish ? 'Quantity' : 'அளவு'}: {item.quantity}</Text>
-      <Text style={styles.totalPrice}>{isEnglish ? 'Subtotal' : 'மொத்தம்'}: ₹{item.total}</Text>
-
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => handleEditItem(item)}
-      >
-        <Text style={{ color: '#fff', fontWeight: '500' }}>{isEnglish ? 'Edit' : 'மாற்று'}</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -190,7 +204,13 @@ export const CartScreen = ({ navigation, route }) => {
           onPress={() => navigation.navigate('CustomerListScreen', { customers })}
         >
           <Text style={styles.selectCustomerText}>
-            {selectedCustomer ? (isEnglish ? 'Change Customer' : 'வாடிக்கையாளரை மாற்றவும்') : (isEnglish ? 'Select Customer' : 'வாடிக்கையாளரை தேர்ந்தெடுக்கவும்')}
+            {selectedCustomer
+              ? isEnglish
+                ? 'Change Customer'
+                : 'வாடிக்கையாளரை மாற்றவும்'
+              : isEnglish
+              ? 'Select Customer'
+              : 'வாடிக்கையாளரை தேர்ந்தெடுக்கவும்'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -245,19 +265,9 @@ export const CartScreen = ({ navigation, route }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{isEnglish ? 'Edit Item' : 'பொருளை மாற்றவும்'}</Text>
             <Text>{isEnglish ? 'Unit Price:' : 'ஒரு பொருளின் விலை:'}</Text>
-            <TextInput
-              style={styles.modalInput}
-              keyboardType="numeric"
-              value={editPrice}
-              onChangeText={setEditPrice}
-            />
+            <TextInput style={styles.modalInput} keyboardType="numeric" value={editPrice} onChangeText={setEditPrice} />
             <Text>{isEnglish ? 'Quantity:' : 'அளவு:'}</Text>
-            <TextInput
-              style={styles.modalInput}
-              keyboardType="numeric"
-              value={editQty}
-              onChangeText={setEditQty}
-            />
+            <TextInput style={styles.modalInput} keyboardType="numeric" value={editQty} onChangeText={setEditQty} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <TouchableOpacity style={styles.saveButton} onPress={handleSaveEdit}>
                 <Text style={{ color: '#fff', fontWeight: '600' }}>{isEnglish ? 'Save' : 'சேமி'}</Text>
@@ -273,12 +283,7 @@ export const CartScreen = ({ navigation, route }) => {
       {/* Lottie Loading Overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
-          <LottieView
-            source={require('../assets/lottie/AddToCartSuccess.json')}
-            autoPlay
-            loop
-            style={{ width: 150, height: 150 }}
-          />
+          <LottieView source={require('../assets/lottie/AddToCartSuccess.json')} autoPlay loop style={{ width: 150, height: 150 }} />
         </View>
       )}
     </View>
@@ -293,16 +298,15 @@ const styles = StyleSheet.create({
   selectedCustomerText: { fontSize: moderateScale(15), color: '#000', fontWeight: '500' },
   emptyText: { fontSize: moderateScale(16), color: '#999', textAlign: 'center', marginTop: moderateScale(100) },
   cartList: { paddingBottom: moderateScale(20) },
-  card: { backgroundColor: '#EAF1FB', borderRadius: moderateScale(16), padding: moderateScale(14), marginBottom: moderateScale(16) },
-  image: { width: '100%', height: moderateScale(120), borderRadius: moderateScale(10), marginBottom: moderateScale(10) },
-  deleteButton: { position: 'absolute', top: moderateScale(8), right: moderateScale(8), backgroundColor: '#E53935', width: moderateScale(28), height: moderateScale(28), borderRadius: moderateScale(14), justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  editButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(6), paddingHorizontal: moderateScale(12), borderRadius: moderateScale(8), alignSelf: 'flex-start', marginTop: moderateScale(8) },
+  card: { flexDirection: 'row', backgroundColor: '#EAF1FB', borderRadius: moderateScale(16), padding: moderateScale(10), marginBottom: moderateScale(16) },
+  image: { width: moderateScale(100), height: moderateScale(100), borderRadius: moderateScale(10), marginRight: moderateScale(12) },
+  infoContainer: { flex: 1 },
+  editButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(6), paddingHorizontal: moderateScale(12), borderRadius: moderateScale(8), alignItems: 'center' },
   selectCustomerButton: { backgroundColor: '#1577EA', paddingVertical: moderateScale(8), paddingHorizontal: moderateScale(12), borderRadius: moderateScale(8), marginTop: moderateScale(8), alignSelf: 'flex-start' },
   selectCustomerText: { color: '#fff', fontSize: moderateScale(14), fontWeight: '500' },
   productName: { fontSize: moderateScale(15), fontWeight: '600', color: '#1E1E1E', marginBottom: moderateScale(4) },
-  category: { fontSize: moderateScale(13), color: '#444', marginBottom: moderateScale(2) },
   subText: { fontSize: moderateScale(13), color: '#555', marginBottom: moderateScale(2) },
-  totalPrice: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#1577EA', marginTop: moderateScale(6) },
+  totalPrice: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#1577EA', marginTop: moderateScale(4) },
   summaryContainer: { backgroundColor: '#fff', borderTopWidth: moderateScale(1), borderTopColor: '#ddd', paddingVertical: moderateScale(12), paddingHorizontal: moderateScale(16), flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(10) },
   totalLabel: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#333' },
   totalValue: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#1577EA' },

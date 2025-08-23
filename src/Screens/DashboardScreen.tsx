@@ -79,20 +79,26 @@ export const DashboardScreen = ({ navigation }) => {
   };
 
   const transformJobData = (data) => data
-    .filter(item => item.status.toLowerCase() !== 'delivered')
-    .map((item, index) => ({
-      id: item.id.toString(),
-      orderId: item.orderId,
-      slNo: (index + 1).toString(),
-      customer: item.User?.name || (isEnglish ? 'Unknown' : 'காணப்படவில்லை'),
-      customerPhone: item.User?.phone || (isEnglish ? 'N/A' : 'கிடைக்கவில்லை'),
-      ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-      vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
-      materials: Array.isArray(item.products)
-        ? item.products.map(p => ({ name: p.name, quantity: p.quantity, price: p.price }))
-        : [],
-    }));
+  .filter(item => item.status.toLowerCase() !== 'delivered')
+  .map((item, index) => ({
+    id: item.id.toString(),
+    orderId: item.orderId,
+    slNo: (index + 1).toString(),
+    customer: item.User?.name || (isEnglish ? 'Unknown' : 'காணப்படவில்லை'),
+    customerPhone: item.User?.phone || (isEnglish ? 'N/A' : 'கிடைக்கவில்லை'),
+    ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+    vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
+    materials: Array.isArray(item.products)
+      ? item.products.map(p => ({
+          name: p.name,
+          quantity: p.quantity,
+          price: p.price,
+          size: p.size, // ← add this
+        }))
+      : [],
+  }));
+
 
   const fetchAllUsersAndDriversCount = async () => {
     try {
@@ -236,7 +242,7 @@ export const DashboardScreen = ({ navigation }) => {
                         slNo={(index + 1).toString().padStart(2, '0')}
                         customerName={job.customer}
                         customerPhone={job.customerPhone}
-                        loadDetails={job.materials.map(mat => `${mat.name} * ${mat.quantity}`)}
+                        loadDetails={job.materials.map(mat => `${mat.name} (${mat.size || 'N/A'}) * ${mat.quantity}`)}
                         buttonLabel={
                           job.status === 'Delivered'
                             ? isEnglish ? 'Delivered' : 'முற்றியனது'
