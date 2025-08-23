@@ -1,4 +1,3 @@
-// src/screens/CartScreen.js
 import React, { useState } from 'react';
 import {
   View,
@@ -15,6 +14,7 @@ import LottieView from 'lottie-react-native';
 import { ArrowBack } from '../assets';
 import { useProductStore } from '../stores/useProductStore';
 import { useAllUsersStore } from '../stores/useAllUsersStore';
+import { useToggleStore } from '../stores/useToggleStore';
 import axios from 'axios';
 import { baseUrl } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
@@ -22,6 +22,7 @@ import { moderateScale } from './utils/scalingUtils';
 export const CartScreen = ({ navigation, route }) => {
   const { cart, clearCart, updateCartItem, removeCartItem } = useProductStore();
   const { users } = useAllUsersStore();
+  const { isEnglish } = useToggleStore();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -38,11 +39,17 @@ export const CartScreen = ({ navigation, route }) => {
 
   const handleCheckout = async () => {
     if (!selectedCustomer) {
-      Alert.alert('Customer Required', 'Please select a customer before checking out.');
+      Alert.alert(
+        isEnglish ? 'Customer Required' : 'வாடிக்கையாளர் தேவை',
+        isEnglish ? 'Please select a customer before checking out.' : 'செக்கவுட் செய்யும் முன் ஒரு வாடிக்கையாளரைத் தேர்ந்தெடுக்கவும்.'
+      );
       return;
     }
     if (cart.length === 0) {
-      Alert.alert('Cart is Empty', 'Please add items to the cart.');
+      Alert.alert(
+        isEnglish ? 'Cart is Empty' : 'சேக்கொடு காலியாக உள்ளது',
+        isEnglish ? 'Please add items to the cart.' : 'சேக்கொட்டில் பொருட்களைச் சேர்க்கவும்.'
+      );
       return;
     }
 
@@ -73,12 +80,15 @@ export const CartScreen = ({ navigation, route }) => {
         setTransportCharge('0');
         navigation.navigate('BillScreen', { order: orderPayload });
       } else {
-        Alert.alert('Error', 'Order could not be placed. Try again.');
+        Alert.alert(
+          isEnglish ? 'Error' : 'பிழை',
+          isEnglish ? 'Order could not be placed. Try again.' : 'ஆர்டர் செய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+        );
       }
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || 'Something went wrong while placing the order.';
-      Alert.alert('Error', errorMessage);
+        error.response?.data?.message || (isEnglish ? 'Something went wrong while placing the order.' : 'ஆர்டர் செய்யும் போது ஒரு பிழை ஏற்பட்டது.');
+      Alert.alert(isEnglish ? 'Error' : 'பிழை', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -96,11 +106,17 @@ export const CartScreen = ({ navigation, route }) => {
     const price = parseFloat(editPrice);
 
     if (isNaN(quantity) || quantity <= 0) {
-      Alert.alert('Invalid Quantity', 'Quantity must be a positive number.');
+      Alert.alert(
+        isEnglish ? 'Invalid Quantity' : 'தவறான அளவு',
+        isEnglish ? 'Quantity must be a positive number.' : 'அளவு ஒரு நேர்மறை எண்ணாக இருக்க வேண்டும்.'
+      );
       return;
     }
     if (isNaN(price) || price <= 0) {
-      Alert.alert('Invalid Price', 'Unit price must be a positive number.');
+      Alert.alert(
+        isEnglish ? 'Invalid Price' : 'தவறான விலை',
+        isEnglish ? 'Unit price must be a positive number.' : 'ஒரு பொருளின் விலை நேர்மறை எண்ணாக இருக்க வேண்டும்.'
+      );
       return;
     }
 
@@ -116,11 +132,13 @@ export const CartScreen = ({ navigation, route }) => {
           style={styles.deleteButton}
           onPress={() =>
             Alert.alert(
-              'Remove Item',
-              'Are you sure you want to remove this item from the cart?',
+              isEnglish ? 'Remove Item' : 'பொருள் அகற்று',
+              isEnglish
+                ? 'Are you sure you want to remove this item from the cart?'
+                : 'இந்த பொருளை கார்டில் இருந்து அகற்ற விரும்புகிறீர்களா?',
               [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Yes', style: 'destructive', onPress: () => removeCartItem(item.product.id) },
+                { text: isEnglish ? 'Cancel' : 'ரத்து செய்', style: 'cancel' },
+                { text: isEnglish ? 'Yes' : 'ஆம்', style: 'destructive', onPress: () => removeCartItem(item.product.id) },
               ]
             )
           }
@@ -130,18 +148,18 @@ export const CartScreen = ({ navigation, route }) => {
       </View>
 
       <Text style={styles.productName}>{item.product.name}</Text>
-      <Text style={styles.category}>Category: {item.product.category}</Text>
-      {item.selectedType && <Text style={styles.subText}>Type: {item.selectedType}</Text>}
-      {item.selectedSize && <Text style={styles.subText}>Size: {item.selectedSize}</Text>}
-      <Text style={styles.subText}>Unit Price: {item.product.price}</Text>
-      <Text style={styles.subText}>Quantity: {item.quantity}</Text>
-      <Text style={styles.totalPrice}>Subtotal: ₹{item.total}</Text>
+      <Text style={styles.category}>{isEnglish ? 'Category' : 'வகை'}: {item.product.category}</Text>
+      {item.selectedType && <Text style={styles.subText}>{isEnglish ? 'Type' : 'வகை'}: {item.selectedType}</Text>}
+      {item.selectedSize && <Text style={styles.subText}>{isEnglish ? 'Size' : 'அளவு'}: {item.selectedSize}</Text>}
+      <Text style={styles.subText}>{isEnglish ? 'Unit Price' : 'ஒரு பொருளின் விலை'}: {item.product.price}</Text>
+      <Text style={styles.subText}>{isEnglish ? 'Quantity' : 'அளவு'}: {item.quantity}</Text>
+      <Text style={styles.totalPrice}>{isEnglish ? 'Subtotal' : 'மொத்தம்'}: ₹{item.total}</Text>
 
       <TouchableOpacity
         style={styles.editButton}
         onPress={() => handleEditItem(item)}
       >
-        <Text style={{ color: '#fff', fontWeight: '500' }}>Edit</Text>
+        <Text style={{ color: '#fff', fontWeight: '500' }}>{isEnglish ? 'Edit' : 'மாற்று'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -152,17 +170,19 @@ export const CartScreen = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Your Cart</Text>
+        <Text style={styles.title}>{isEnglish ? 'Your Cart' : 'உங்கள் கார்ட்'}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.selectedCustomerContainer}>
         {selectedCustomer ? (
           <Text style={styles.selectedCustomerText}>
-            Selected Customer: {selectedCustomer.name}
+            {isEnglish ? 'Selected Customer' : 'தேர்ந்தெடுக்கப்பட்ட வாடிக்கையாளர்'}: {selectedCustomer.name}
           </Text>
         ) : (
-          <Text style={styles.selectedCustomerText}>No customer selected.</Text>
+          <Text style={styles.selectedCustomerText}>
+            {isEnglish ? 'No customer selected.' : 'ஒரு வாடிக்கையாளர் தேர்ந்தெடுக்கப்படவில்லை.'}
+          </Text>
         )}
 
         <TouchableOpacity
@@ -170,13 +190,13 @@ export const CartScreen = ({ navigation, route }) => {
           onPress={() => navigation.navigate('CustomerListScreen', { customers })}
         >
           <Text style={styles.selectCustomerText}>
-            {selectedCustomer ? 'Change Customer' : 'Select Customer'}
+            {selectedCustomer ? (isEnglish ? 'Change Customer' : 'வாடிக்கையாளரை மாற்றவும்') : (isEnglish ? 'Select Customer' : 'வாடிக்கையாளரை தேர்ந்தெடுக்கவும்')}
           </Text>
         </TouchableOpacity>
       </View>
 
       {cart.length === 0 ? (
-        <Text style={styles.emptyText}>Your cart is empty.</Text>
+        <Text style={styles.emptyText}>{isEnglish ? 'Your cart is empty.' : 'உங்கள் கார்ட் காலியாக உள்ளது.'}</Text>
       ) : (
         <>
           <FlatList
@@ -189,12 +209,12 @@ export const CartScreen = ({ navigation, route }) => {
 
           <View style={styles.summaryContainer}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.totalLabel}>Grand Total</Text>
+              <Text style={styles.totalLabel}>{isEnglish ? 'Grand Total' : 'மொத்தம்'}</Text>
               <Text style={styles.totalValue}>₹{grandTotal}</Text>
             </View>
 
             <View style={{ flex: 1, marginLeft: moderateScale(10) }}>
-              <Text style={styles.totalLabel}>Transport Charge</Text>
+              <Text style={styles.totalLabel}>{isEnglish ? 'Transport Charge' : 'போக்குவரத்து கட்டணம்'}</Text>
               <TextInput
                 style={styles.transportInput}
                 keyboardType="numeric"
@@ -210,11 +230,11 @@ export const CartScreen = ({ navigation, route }) => {
             onPress={handleCheckout}
             disabled={loading}
           >
-            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+            <Text style={styles.checkoutText}>{isEnglish ? 'Proceed to Checkout' : 'செக்கவுட் செய்யவும்'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
-            <Text style={styles.clearButtonText}>Clear Cart</Text>
+            <Text style={styles.clearButtonText}>{isEnglish ? 'Clear Cart' : 'கார்டை காலி செய்யவும்'}</Text>
           </TouchableOpacity>
         </>
       )}
@@ -223,15 +243,15 @@ export const CartScreen = ({ navigation, route }) => {
       <Modal visible={editModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Item</Text>
-            <Text>Unit Price:</Text>
+            <Text style={styles.modalTitle}>{isEnglish ? 'Edit Item' : 'பொருளை மாற்றவும்'}</Text>
+            <Text>{isEnglish ? 'Unit Price:' : 'ஒரு பொருளின் விலை:'}</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="numeric"
               value={editPrice}
               onChangeText={setEditPrice}
             />
-            <Text>Quantity:</Text>
+            <Text>{isEnglish ? 'Quantity:' : 'அளவு:'}</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="numeric"
@@ -240,10 +260,10 @@ export const CartScreen = ({ navigation, route }) => {
             />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <TouchableOpacity style={styles.saveButton} onPress={handleSaveEdit}>
-                <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{isEnglish ? 'Save' : 'சேமி'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
-                <Text style={{ color: '#fff', fontWeight: '600' }}>Cancel</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{isEnglish ? 'Cancel' : 'ரத்து செய்'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -264,7 +284,6 @@ export const CartScreen = ({ navigation, route }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FB', padding: moderateScale(16) },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: moderateScale(42), marginBottom: moderateScale(16) },

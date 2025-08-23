@@ -11,12 +11,15 @@ import {
   TextInput,
 } from 'react-native';
 import { moderateScale } from './utils/scalingUtils';
+import { useToggleStore } from '../stores/useToggleStore';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // 16px padding + 16px gap
 
 export const CustomerListScreen = ({ route, navigation }) => {
   const { customers } = route.params;
+  const { isEnglish } = useToggleStore();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState(customers);
 
@@ -52,23 +55,23 @@ export const CustomerListScreen = ({ route, navigation }) => {
           style={styles.image}
         />
         <View style={styles.roleBanner}>
-          <Text style={styles.roleText}>Customer</Text>
+          <Text style={styles.roleText}>{isEnglish ? 'Customer' : 'வாடிக்கையாளர்'}</Text>
         </View>
       </View>
       <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.detail}>Phone: {item.phone}</Text>
-      <Text style={styles.detail}>Email: {item.email}</Text>
+      <Text style={styles.detail}>{isEnglish ? 'Phone' : 'தொலைபேசி'}: {item.phone}</Text>
+      <Text style={styles.detail}>{isEnglish ? 'Email' : 'மின்னஞ்சல்'}: {item.email}</Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Customer List</Text>
+      <Text style={styles.header}>{isEnglish ? 'Customer List' : 'வாடிக்கையாளர்களின் பட்டியல்'}</Text>
 
       {/* Search Bar */}
       <TextInput
         style={styles.searchInput}
-        placeholder="Search by name, phone, or email"
+        placeholder={isEnglish ? 'Search by name, phone, or email' : 'பெயர், தொலைபேசி, அல்லது மின்னஞ்சல் மூலம் தேடு'}
         placeholderTextColor='#666'
         value={searchQuery}
         onChangeText={setSearchQuery}
@@ -85,7 +88,7 @@ export const CustomerListScreen = ({ route, navigation }) => {
           showsVerticalScrollIndicator={false}
         />
       ) : (
-        <Text style={styles.text}>No customers found.</Text>
+        <Text style={styles.text}>{isEnglish ? 'No customers found.' : 'வாடிக்கையாளர்கள் எதுவும் இல்லை.'}</Text>
       )}
     </View>
   );

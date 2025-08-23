@@ -15,6 +15,7 @@ import DocumentPicker from 'react-native-document-picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useTruckStore } from '../stores/useTruckStore';
+import { useToggleStore } from '../stores/useToggleStore';
 import { ArrowBack } from '../assets';
 import axios from 'axios';
 import { baseUrl, AddServiceToVehicleEndpoint } from '../../config';
@@ -38,8 +39,13 @@ export const DamageHistory = ({ route }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const isEnglish = useToggleStore((state) => state.isEnglish);
 
-  const statuses = ['Can Drive', 'Normal', 'Need to Change'];
+  const statuses = [
+    isEnglish ? 'Can Drive' : 'ஓட்ட முடியும்',
+    isEnglish ? 'Normal' : 'இயல்பானது',
+    isEnglish ? 'Need to Change' : 'மாற்ற வேண்டும்',
+  ];
 
   const handleFileUpload = async () => {
     try {
@@ -55,48 +61,45 @@ export const DamageHistory = ({ route }) => {
   };
 
   const handleAddDamage = async () => {
-  if (!damageText || !variation || !selectedDate || !status) {
-    alert('Please fill all fields before submitting.');
-    return;
-  }
+    if (!damageText || !variation || !selectedDate || !status) {
+      alert(isEnglish ? 'Please fill all fields before submitting.' : 'அனைத்து புலங்களையும் நிரப்பவும்.');
+      return;
+    }
 
-  setLoading(true); // start loading
-  try {
-    const vehicleId = truck?.id;
-    if (!vehicleId) throw new Error('Truck ID not found');
+    setLoading(true);
+    try {
+      const vehicleId = truck?.id;
+      if (!vehicleId) throw new Error('Truck ID not found');
 
-    const payload = {
-      title: damageText,
-      variation,
-      fileUrl: file?.uri || '', // replace with real URL if uploading to cloud
-      date: selectedDate.toISOString().split('T')[0],
-      status,
-    };
+      const payload = {
+        title: damageText,
+        variation,
+        fileUrl: file?.uri || '',
+        date: selectedDate.toISOString().split('T')[0],
+        status,
+      };
 
-    // Add locally for display
-    addDamage(vehicleNumber, {
-      id: Date.now().toString(),
-      ...payload,
-      file,
-      changed: false,
-    });
+      addDamage(vehicleNumber, {
+        id: Date.now().toString(),
+        ...payload,
+        file,
+        changed: false,
+      });
 
-    // Submit to backend
-    await axios.post(`${baseUrl}${AddServiceToVehicleEndpoint(vehicleId)}`, payload);
-
-    console.log('✅ Damage report submitted');
-  } catch (err) {
-    console.error('❌ Failed to submit damage report:', err?.response?.data || err.message);
-  } finally {
-    setModalVisible(false);
-    setDamageText('');
-    setVariation('');
-    setFile(null);
-    setStatus('Normal');
-    setSelectedDate(new Date());
-    setLoading(false); // stop loading
-  }
-};
+      await axios.post(`${baseUrl}${AddServiceToVehicleEndpoint(vehicleId)}`, payload);
+      console.log('✅ Damage report submitted');
+    } catch (err) {
+      console.error('❌ Failed to submit damage report:', err?.response?.data || err.message);
+    } finally {
+      setModalVisible(false);
+      setDamageText('');
+      setVariation('');
+      setFile(null);
+      setStatus(statuses[1]); // default to Normal
+      setSelectedDate(new Date());
+      setLoading(false);
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -111,11 +114,11 @@ export const DamageHistory = ({ route }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Can Drive':
+      case statuses[0]:
         return '#4CAF50';
-      case 'Normal':
+      case statuses[1]:
         return '#FFC107';
-      case 'Need to Change':
+      case statuses[2]:
         return '#F44336';
       default:
         return '#000';
@@ -129,7 +132,9 @@ export const DamageHistory = ({ route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Damage History</Text>
+        <Text style={styles.headerTitle}>
+          {isEnglish ? 'Damage History' : 'நஷ்டம் வரலாறு'}
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -140,10 +145,14 @@ export const DamageHistory = ({ route }) => {
         }
       >
         <View style={{ padding: 16 }}>
-          <Text style={styles.subTitle}>Vehicle: {vehicleNumber}</Text>
+          <Text style={styles.subTitle}>
+            {isEnglish ? 'Vehicle:' : 'வாகனம்:'} {vehicleNumber}
+          </Text>
 
           {history.length === 0 ? (
-            <Text style={{ color: '#888' }}>No damage reported yet.</Text>
+            <Text style={{ color: '#888' }}>
+              {isEnglish ? 'No damage reported yet.' : 'இன்னும் எந்த நஷ்டமும் பதிவு செய்யப்படவில்லை.'}
+            </Text>
           ) : (
             <FlatList
               data={history}
@@ -152,12 +161,16 @@ export const DamageHistory = ({ route }) => {
                 <View style={styles.card}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.text}>{item.title || item.text}</Text>
-                    {item.changed && <Text style={styles.changedBadge}>Changed</Text>}
+                    {item.changed && <Text style={styles.changedBadge}>{isEnglish ? 'Changed' : 'மாற்றப்பட்டது'}</Text>}
                   </View>
-                  <Text style={styles.subText}>Variation: {item.variation || 'N/A'}</Text>
-                  <Text style={styles.subText}>Date: {item.date}</Text>
+                  <Text style={styles.subText}>
+                    {isEnglish ? 'Variation:' : 'விருத்தம்:'} {item.variation || 'N/A'}
+                  </Text>
+                  <Text style={styles.subText}>
+                    {isEnglish ? 'Date:' : 'தேதி:'} {item.date}
+                  </Text>
                   <Text style={[styles.subText, { color: getStatusColor(item.status) }]}>
-                    Status: {item.status}
+                    {isEnglish ? 'Status:' : 'நிலை:'} {item.status}
                   </Text>
                   {item.file && <Text style={styles.fileText}>📎 {item.file.name}</Text>}
                 </View>
@@ -176,15 +189,17 @@ export const DamageHistory = ({ route }) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Damage Report</Text>
+              <Text style={styles.modalTitle}>
+                {isEnglish ? 'Add Damage Report' : 'நஷ்டம் அறிக்கை சேர்க்கவும்'}
+              </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{isEnglish ? 'Cancel' : 'ரத்து செய்யவும்'}</Text>
               </TouchableOpacity>
             </View>
 
             <TextInput
               style={styles.input}
-              placeholder="Describe the damage"
+              placeholder={isEnglish ? 'Describe the damage' : 'நஷ்டத்தை விவரிக்கவும்'}
               placeholderTextColor="#666"
               value={damageText}
               onChangeText={setDamageText}
@@ -192,14 +207,14 @@ export const DamageHistory = ({ route }) => {
 
             <TextInput
               style={styles.input}
-              placeholder="Variation"
+              placeholder={isEnglish ? 'Variation' : 'விருத்தம்'}
               placeholderTextColor="#666"
               value={variation}
               onChangeText={setVariation}
             />
 
             <TouchableOpacity onPress={handleFileUpload} style={styles.uploadBtn}>
-              <Text>{file ? `📎 ${file.name}` : 'Upload File'}</Text>
+              <Text>{file ? `📎 ${file.name}` : isEnglish ? 'Upload File' : 'கோப்பை பதிவேற்றவும்'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -234,15 +249,14 @@ export const DamageHistory = ({ route }) => {
             </View>
 
             <TouchableOpacity
-  style={[styles.addBtn, loading && { opacity: 0.7 }]}
-  onPress={handleAddDamage}
-  disabled={loading}
->
-  <Text style={styles.addBtnText}>
-    {loading ? 'Submitting...' : 'Submit'}
-  </Text>
-</TouchableOpacity>
-
+              style={[styles.addBtn, loading && { opacity: 0.7 }]}
+              onPress={handleAddDamage}
+              disabled={loading}
+            >
+              <Text style={styles.addBtnText}>
+                {loading ? (isEnglish ? 'Submitting...' : 'சமர்ப்பிக்கப்படுகிறது...') : (isEnglish ? 'Submit' : 'சமர்ப்பி')}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -325,7 +339,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: moderateScale(20),
     borderTopLeftRadius: moderateScale(20),
   },
-  modalTitle: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#000', marginBottom: moderateScale(10) },
+  modalTitle: { fontSize: moderateScale(14), fontWeight: 'bold', color: '#000', marginBottom: moderateScale(10) },
   input: {
     borderWidth: moderateScale(1),
     borderColor: '#ccc',
@@ -369,7 +383,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(10),
   },
   cancelText: {
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(12),
     color: '#F44336',
     fontWeight: 'bold',
   },

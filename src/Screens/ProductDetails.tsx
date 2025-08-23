@@ -12,12 +12,14 @@ import {
 import LottieView from 'lottie-react-native';
 import { ArrowBack } from '../assets';
 import { useProductStore } from '../stores/useProductStore';
+import { useToggleStore } from '../stores/useToggleStore';
 import { moderateScale } from './utils/scalingUtils';
 
 const { height } = Dimensions.get('window');
 
 export const ProductDetails = ({ route, navigation }: any) => {
   const { productId, product: passedProduct } = route.params || {};
+  const { isEnglish } = useToggleStore();
 
   const product =
     passedProduct || useProductStore.getState().getProductById(productId);
@@ -27,9 +29,9 @@ export const ProductDetails = ({ route, navigation }: any) => {
   if (!product) {
     return (
       <View style={styles.center}>
-        <Text>Product not found.</Text>
+        <Text>{isEnglish ? 'Product not found.' : 'பொருள் கிடைக்கவில்லை.'}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={{ color: 'blue' }}>Go Back</Text>
+          <Text style={{ color: 'blue' }}>{isEnglish ? 'Go Back' : 'மீண்டும் செல்லவும்'}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -56,13 +58,13 @@ export const ProductDetails = ({ route, navigation }: any) => {
   const [selectedSize, setSelectedSize] = useState(sizes[0] || '');
 
   const [quantity, setQuantity] = useState('');
-  const description = product.description ?? 'No description available.';
+  const description = product.description ?? (isEnglish ? 'No description available.' : 'விளக்கம் இல்லை.');
   const unitPrice = parseInt(product.price?.replace(/[^\d]/g, '') || '0', 10);
 
   const handleAddToCart = () => {
     const qty = Number(quantity);
     if (!qty || qty <= 0) {
-      alert('Please enter a valid quantity.');
+      alert(isEnglish ? 'Please enter a valid quantity.' : 'சரியான அளவை உள்ளிடவும்.');
       return;
     }
 
@@ -94,7 +96,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Details</Text>
+        <Text style={styles.title}>{isEnglish ? 'Details' : 'விபரங்கள்'}</Text>
         <TouchableOpacity>
           <Text style={styles.heartIcon}>💙</Text>
         </TouchableOpacity>
@@ -132,13 +134,13 @@ export const ProductDetails = ({ route, navigation }: any) => {
           <View style={styles.dragHandle} />
           <Text style={styles.productName}>{product.name}</Text>
           <Text style={styles.price}>{product.price}</Text>
-          <Text style={styles.descriptionLabel}>Description</Text>
+          <Text style={styles.descriptionLabel}>{isEnglish ? 'Description' : 'விளக்கம்'}</Text>
           <Text style={styles.details}>{description}</Text>
 
           {/* Type Selector */}
           {isTypeSelectable && (
             <>
-              <Text style={styles.chooseSize}>Choose Type</Text>
+              <Text style={styles.chooseSize}>{isEnglish ? 'Choose Type' : 'வகையை தேர்ந்தெடுக்கவும்'}</Text>
               <View style={styles.sizeRow}>
                 {types.map((type: string) => (
                   <TouchableOpacity
@@ -167,7 +169,7 @@ export const ProductDetails = ({ route, navigation }: any) => {
           {/* Size Selector */}
           {!isSandCategory && sizes.length > 0 && (
             <>
-              <Text style={styles.chooseSize}>Choose Size</Text>
+              <Text style={styles.chooseSize}>{isEnglish ? 'Choose Size' : 'அளவை தேர்ந்தெடுக்கவும்'}</Text>
               <View style={styles.sizeRow}>
                 {sizes.map((size: string) => (
                   <TouchableOpacity
@@ -194,11 +196,11 @@ export const ProductDetails = ({ route, navigation }: any) => {
           )}
 
           {/* Quantity */}
-          <Text style={styles.quantity}>Quantity</Text>
+          <Text style={styles.quantity}>{isEnglish ? 'Quantity' : 'அளவு'}</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
-            placeholder="Enter quantity"
+            placeholder={isEnglish ? 'Enter quantity' : 'அளவை உள்ளிடவும்'}
             placeholderTextColor="#aaa"
             value={quantity}
             onChangeText={setQuantity}
@@ -207,16 +209,18 @@ export const ProductDetails = ({ route, navigation }: any) => {
           {/* Total Summary */}
           {quantity !== '' && !isNaN(Number(quantity)) && (
             <>
-              <Text style={styles.summaryText}>Selected Quantity: {quantity}</Text>
               <Text style={styles.summaryText}>
-                Total Price: ₹{Number(quantity) * unitPrice}
+                {isEnglish ? 'Selected Quantity' : 'தேர்ந்தெடுக்கப்பட்ட அளவு'}: {quantity}
+              </Text>
+              <Text style={styles.summaryText}>
+                {isEnglish ? 'Total Price' : 'மொத்த விலை'}: ₹{Number(quantity) * unitPrice}
               </Text>
             </>
           )}
 
           {/* Add to Cart Button */}
           <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
-            <Text style={styles.cartText}>Add to Cart</Text>
+            <Text style={styles.cartText}>{isEnglish ? 'Add to Cart' : 'கார்ட்டில் சேர்க்கவும்'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

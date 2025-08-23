@@ -14,6 +14,7 @@ import { ArrowBack } from '../assets';
 import { moderateScale } from './utils/scalingUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { baseUrl } from '../../config';
+import { useToggleStore } from '../stores/useToggleStore';
 
 // Config endpoint
 const GetUsersByRoleEndpoint = (role) => `/api/users/by-role/${role}`;
@@ -44,6 +45,7 @@ const TruckDetails = ({ route, navigation }) => {
   const [showDrivers, setShowDrivers] = useState(false);
   const [drivers, setDrivers] = useState([]);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
+  const isEnglish = useToggleStore((state) => state.isEnglish);
 
   // Transform truck details into display-friendly array
   const detailsArray = Object.entries(truck.details).map(([key, value]) => ({
@@ -64,7 +66,7 @@ const TruckDetails = ({ route, navigation }) => {
       );
 
       // Add "No Driver / Null" option at the top
-      const allDrivers = [{ userid: 999999, name: 'No Driver / Null' }, ...response.data];
+      const allDrivers = [{ userid: 999999, name: isEnglish ? 'No Driver / Null' : 'ஓர் ஓட்டுநர் இல்லை' }, ...response.data];
       setDrivers(allDrivers);
     } catch (err) {
       console.error('❌ Failed to fetch drivers:', err.response?.data || err.message);
@@ -91,11 +93,11 @@ const TruckDetails = ({ route, navigation }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert('Driver assigned successfully!');
+      alert(isEnglish ? 'Driver assigned successfully!' : 'ஓட்டுநர் வெற்றிகரமாக நியமிக்கப்பட்டார்!');
       setShowDrivers(false); // close modal
     } catch (err) {
       console.error('❌ Failed to assign driver:', err.response?.data || err.message);
-      alert('Failed to assign driver');
+      alert(isEnglish ? 'Failed to assign driver' : 'ஓட்டுநரை நியமிக்க தோல்வியடைந்தது');
     }
   };
 
@@ -106,7 +108,9 @@ const TruckDetails = ({ route, navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Truck Details</Text>
+        <Text style={styles.headerText}>
+          {isEnglish ? 'Truck Details' : 'லாரி விவரங்கள்'}
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -142,7 +146,7 @@ const TruckDetails = ({ route, navigation }) => {
             })
           }
         >
-          <Text style={styles.damageText}>🛠 Damage</Text>
+          <Text style={styles.damageText}>🛠 {isEnglish ? 'Damage' : 'நஷ்டம்'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -154,7 +158,7 @@ const TruckDetails = ({ route, navigation }) => {
             })
           }
         >
-          <Text style={styles.refuelText}>⛽ Refuel</Text>
+          <Text style={styles.refuelText}>⛽ {isEnglish ? 'Refuel' : 'எரிபொருள்'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -163,14 +167,14 @@ const TruckDetails = ({ route, navigation }) => {
         style={[styles.refuelBtn, { marginHorizontal: moderateScale(16), marginTop: moderateScale(16) }]}
         onPress={handleShowDrivers}
       >
-        <Text style={styles.refuelText}>👤 Show All Drivers</Text>
+        <Text style={styles.refuelText}>👤 {isEnglish ? 'Show All Drivers' : 'எல்லா ஓட்டுநர்களையும் காண்பி'}</Text>
       </TouchableOpacity>
 
       {/* Drivers Modal */}
       <Modal visible={showDrivers} animationType="slide" transparent>
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>All Drivers</Text>
+            <Text style={styles.modalTitle}>{isEnglish ? 'All Drivers' : 'எல்லா ஓட்டுநர்கள்'}</Text>
             {loadingDrivers ? (
               <ActivityIndicator size="large" color="#1976D2" style={{ marginVertical: 20 }} />
             ) : (
@@ -190,7 +194,7 @@ const TruckDetails = ({ route, navigation }) => {
               onPress={() => setShowDrivers(false)}
               style={styles.closeBtn}
             >
-              <Text style={styles.closeText}>Close</Text>
+              <Text style={styles.closeText}>{isEnglish ? 'Close' : 'மூடு'}</Text>
             </TouchableOpacity>
           </View>
         </View>

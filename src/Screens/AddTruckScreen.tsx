@@ -13,11 +13,12 @@ import { moderateScale } from './utils/scalingUtils';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
+import { useToggleStore } from '../stores/useToggleStore';
 
 export const AddTruckScreen = () => {
   const navigation = useNavigation();
+  const isEnglish = useToggleStore((state) => state.isEnglish);
 
-  // Initialize fields as empty
   const [truckData, setTruckData] = useState({
     slNo: '',
     vehicleNumber: '',
@@ -32,23 +33,22 @@ export const AddTruckScreen = () => {
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState({ visible: false, field: null });
 
-  const handleChange = (key, value) => {
-    setTruckData({ ...truckData, [key]: value });
-  };
+  const handleChange = (key, value) => setTruckData({ ...truckData, [key]: value });
 
   const handleDateChange = (event, selectedDate) => {
     const { field } = showDatePicker;
     setShowDatePicker({ visible: false, field: null });
     if (event.type === 'set') {
       setTruckData({ ...truckData, [field]: selectedDate.toISOString().split('T')[0] });
-    } else {
-      setTruckData({ ...truckData, [field]: null });
     }
   };
 
   const handleSave = async () => {
     if (!truckData.vehicleNumber || !truckData.driverId) {
-      Alert.alert('Error', 'Vehicle Number and Driver ID are required!');
+      Alert.alert(
+        isEnglish ? 'Error' : 'பிழை',
+        isEnglish ? 'Vehicle Number and Driver ID are required!' : 'வாகன எண் மற்றும் ஓட்டுநர் ஐடி அவசியம்!'
+      );
       return;
     }
 
@@ -59,12 +59,18 @@ export const AddTruckScreen = () => {
         truckData,
         { headers: { 'Content-Type': 'application/json' } }
       );
-      Alert.alert('Success', 'Truck added successfully!');
+      Alert.alert(
+        isEnglish ? 'Success' : 'வெற்றி',
+        isEnglish ? 'Truck added successfully!' : 'புதிய வாகனம் சேர்க்கப்பட்டது!'
+      );
       setLoading(false);
       navigation.goBack();
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to add truck.');
+      Alert.alert(
+        isEnglish ? 'Error' : 'பிழை',
+        isEnglish ? 'Failed to add truck.' : 'வாகனம் சேர்க்க முடியவில்லை.'
+      );
       setLoading(false);
     }
   };
@@ -78,7 +84,7 @@ export const AddTruckScreen = () => {
           onPress={() => setShowDatePicker({ visible: true, field: key })}
         >
           <Text style={{ color: truckData[key] ? '#000' : '#888' }}>
-            {truckData[key] || `Select ${key}`}
+            {truckData[key] || (isEnglish ? `Select ${key}` : `${key} தேர்ந்தெடுக்கவும்`)}
           </Text>
         </TouchableOpacity>
       );
@@ -87,7 +93,7 @@ export const AddTruckScreen = () => {
     return (
       <TextInput
         style={styles.input}
-        placeholder={`Enter ${key}`}
+        placeholder={isEnglish ? `Enter ${key}` : `${key} உள்ளிடவும்`}
         placeholderTextColor="#888"
         value={truckData[key]?.toString()}
         onChangeText={(value) => handleChange(key, value)}
@@ -98,18 +104,26 @@ export const AddTruckScreen = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Add New Truck</Text>
+      <Text style={styles.header}>
+        {isEnglish ? 'Add New Truck' : 'புதிய வாகனம் சேர்க்கவும்'}
+      </Text>
 
       {Object.keys(truckData).map((key) => (
         <View style={styles.inputContainer} key={key}>
-          <Text style={styles.label}>{key}</Text>
+          <Text style={styles.label}>
+            {isEnglish ? key : key}
+          </Text>
           {renderInputField(key)}
         </View>
       ))}
 
       {showDatePicker.visible && (
         <DateTimePicker
-          value={truckData[showDatePicker.field] ? new Date(truckData[showDatePicker.field]) : new Date()}
+          value={
+            truckData[showDatePicker.field]
+              ? new Date(truckData[showDatePicker.field])
+              : new Date()
+          }
           mode="date"
           display={Platform.OS === 'ios' ? 'inline' : 'default'}
           onChange={handleDateChange}
@@ -122,7 +136,9 @@ export const AddTruckScreen = () => {
         disabled={loading}
       >
         <Text style={styles.saveButtonText}>
-          {loading ? 'Saving...' : 'Save Truck'}
+          {loading
+            ? isEnglish ? 'Saving...' : 'சேமிக்கப்படுகிறது...'
+            : isEnglish ? 'Save Truck' : 'வாகனத்தைச் சேமிக்கவும்'}
         </Text>
       </TouchableOpacity>
     </ScrollView>

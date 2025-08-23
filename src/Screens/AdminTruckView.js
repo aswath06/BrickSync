@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ArrowBack, FrontTruck, TwoPersonIcon } from '../assets';
 import { useTruckStore } from '../stores/useTruckStore';
 import { moderateScale } from './utils/scalingUtils';
+import { useToggleStore } from '../stores/useToggleStore';
 
 const isValidDate = (date) => new Date(date) > new Date();
 
@@ -37,14 +38,16 @@ const getNearestDue = (details) => {
   return sorted[0] || {};
 };
 
-const TruckCard = ({ truckNumber, due, details, isTruckActive }) => {
+const TruckCard = ({ truckNumber, due, details, isTruckActive, isEnglish }) => {
   const statusColor = isTruckActive ? '#4caf50' : '#ff9800';
-  const statusText = isTruckActive ? 'Active' : 'Inactive';
+  const statusText = isTruckActive
+    ? isEnglish ? 'Active' : 'செயலில்'
+    : isEnglish ? 'Inactive' : 'செயலில் இல்லை';
 
   return (
     <View style={styles.card}>
       <View style={styles.row}>
-        <FrontTruck width={24} height={24} />
+        <FrontTruck width={24} height={24}  color='#1577EA'/>
         <Text style={styles.truckNumber}>{truckNumber}</Text>
         <View style={[styles.statusChip, { backgroundColor: statusColor }]}>
           <Text style={styles.statusText}>{statusText}</Text>
@@ -52,31 +55,31 @@ const TruckCard = ({ truckNumber, due, details, isTruckActive }) => {
       </View>
 
       <View style={styles.detailRow}>
-        <Text style={styles.label}>RC Expiry:</Text>
+        <Text style={styles.label}>{isEnglish ? 'RC Expiry:' : 'RC காலாவதி:'}</Text>
         <Text style={styles.valueText}>{formatDate(details.rcExpiry)}</Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.label}>Insurance:</Text>
+        <Text style={styles.label}>{isEnglish ? 'Insurance:' : 'விமா:'}</Text>
         <Text style={styles.valueText}>{formatDate(details.insurance)}</Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.label}>Pollution:</Text>
+        <Text style={styles.label}>{isEnglish ? 'Pollution:' : 'மாசுபாடு:'}</Text>
         <Text style={styles.valueText}>{formatDate(details.pollution)}</Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.label}>Permit:</Text>
+        <Text style={styles.label}>{isEnglish ? 'Permit:' : 'அனுமதி:'}</Text>
         <Text style={styles.valueText}>{details.permit || '-'}</Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.label}>Fitness:</Text>
+        <Text style={styles.label}>{isEnglish ? 'Fitness:' : 'உடம்படுதல்:'}</Text>
         <Text style={styles.valueText}>{formatDate(details.fitness)}</Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.label}>Tyre Changed:</Text>
+        <Text style={styles.label}>{isEnglish ? 'Tyre Changed:' : 'டைர் மாற்றப்பட்டது:'}</Text>
         <Text style={styles.valueText}>{formatDate(details.tyreChangedDate)}</Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.label}>Total KM:</Text>
+        <Text style={styles.label}>{isEnglish ? 'Total KM:' : 'மொத்த கிமீ:'}</Text>
         <Text style={styles.valueText}>{details.TotalKm || '-'}</Text>
       </View>
     </View>
@@ -87,6 +90,7 @@ export const AdminTruckView = ({ overrideTrucks }) => {
   const { trucks, fetchAllTrucks } = useTruckStore();
   const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
+  const isEnglish = useToggleStore((state) => state.isEnglish);
 
   useEffect(() => {
     const loadTrucks = async () => {
@@ -129,7 +133,9 @@ export const AdminTruckView = ({ overrideTrucks }) => {
           loop
           style={{ width: 180, height: 180 }}
         />
-        <Text style={{ marginTop: 10, color: '#444' }}>Loading trucks...</Text>
+        <Text style={{ marginTop: 10, color: '#444' }}>
+          {isEnglish ? 'Loading trucks...' : 'லாரிகள் ஏற்றுகிறது...'}
+        </Text>
       </View>
     );
   }
@@ -141,7 +147,9 @@ export const AdminTruckView = ({ overrideTrucks }) => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowBack color="black" />
           </TouchableOpacity>
-          <Text style={styles.headerText}>All Trucks</Text>
+          <Text style={styles.headerText}>
+            {isEnglish ? 'All Trucks' : 'அனைத்து லாரிகள்'}
+          </Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -149,14 +157,18 @@ export const AdminTruckView = ({ overrideTrucks }) => {
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
               <TwoPersonIcon width={24} height={24} />
-              <Text style={styles.statusTitle}>Active Trucks</Text>
+              <Text style={styles.statusTitle}>
+                {isEnglish ? 'Active Trucks' : 'செயலில் உள்ள லாரிகள்'}
+              </Text>
             </View>
             <Text style={styles.statusCount}>{activeTrucks.length}</Text>
           </View>
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
               <TwoPersonIcon width={24} height={24} color="orange" />
-              <Text style={styles.statusTitle}>Inactive</Text>
+              <Text style={styles.statusTitle}>
+                {isEnglish ? 'Inactive' : 'செயலில் இல்லை'}
+              </Text>
             </View>
             <Text style={styles.statusCount}>{inactiveTrucks.length}</Text>
           </View>
@@ -174,6 +186,7 @@ export const AdminTruckView = ({ overrideTrucks }) => {
                 due={dueInfo}
                 details={truck.details}
                 isTruckActive={truck.isTruckActive}
+                isEnglish={isEnglish}
               />
             </TouchableOpacity>
           );
@@ -181,23 +194,17 @@ export const AdminTruckView = ({ overrideTrucks }) => {
       </ScrollView>
 
       {/* Floating Plus Button */}
-      {/* Floating Plus Button */}
-<TouchableOpacity
-  style={styles.floatingButton}
-  onPress={() =>
-    navigation.navigate('AddTruckScreen', {
-    })
-  }
->
-  <Text style={{ color: 'white', fontSize: moderateScale(28), fontWeight: 'bold' }}>
-    +
-  </Text>
-</TouchableOpacity>
-
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => navigation.navigate('AddTruckScreen')}
+      >
+        <Text style={{ color: 'white', fontSize: moderateScale(28), fontWeight: 'bold' }}>
+          +
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

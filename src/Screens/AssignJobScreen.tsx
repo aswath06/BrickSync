@@ -12,22 +12,32 @@ import {
   ToastAndroid,
 } from 'react-native';
 import { useTruckStore } from '../stores/useTruckStore';
+import { useToggleStore } from '../stores/useToggleStore';
 import { baseUrl } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
-import Toast from 'react-native-toast-message'; // If using react-native-toast-message
+import Toast from 'react-native-toast-message';
 
 export const AssignJobScreen = ({ route, navigation }) => {
   const { orderId, jobId, customerName, orderTime, materials, vehicleNumber } = route.params;
+  const { trucks, fetchAllTrucks } = useTruckStore();
+  const isEnglish = useToggleStore((state) => state.isEnglish);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(vehicleNumber);
   const [loading, setLoading] = useState(false);
-  const { trucks, fetchAllTrucks } = useTruckStore();
 
-  // Assign job to vehicle
+  const showToast = (message) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, ToastAndroid.SHORT);
+    } else {
+      Toast.show({ type: 'success', text1: message });
+    }
+  };
+
+  // Assign job
   const handleAssign = async () => {
     if (!selectedVehicle) {
-      showToast('Please select a vehicle');
+      showToast(isEnglish ? 'Please select a vehicle' : 'வாகனத்தைத் தேர்ந்தெடுக்கவும்');
       return;
     }
 
@@ -40,27 +50,16 @@ export const AssignJobScreen = ({ route, navigation }) => {
       });
 
       if (response.ok) {
-        console.log('Assignment successful');
-        showToast('Job assigned successfully');
+        showToast(isEnglish ? 'Job assigned successfully' : 'பணி வெற்றிகரமாக ஒதுக்கப்பட்டது');
         navigation.navigate('DashboardScreen');
       } else {
         const errorData = await response.json();
-        console.error('Assignment failed:', errorData);
-        showToast(errorData?.message || 'Assignment failed');
+        showToast(errorData?.message || (isEnglish ? 'Assignment failed' : 'ஒதுக்கீடு தோல்வி'));
       }
     } catch (error) {
-      console.error('Network error:', error);
-      showToast('Network error occurred');
+      showToast(isEnglish ? 'Network error occurred' : 'நெட்வொர்க் பிழை ஏற்பட்டது');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const showToast = (message) => {
-    if (Platform.OS === 'android') {
-      ToastAndroid.show(message, ToastAndroid.SHORT);
-    } else {
-      Toast.show({ type: 'success', text1: message });
     }
   };
 
@@ -74,20 +73,19 @@ export const AssignJobScreen = ({ route, navigation }) => {
       });
 
       if (response.ok) {
-        showToast('Job deleted successfully');
+        showToast(isEnglish ? 'Job deleted successfully' : 'பணி நீக்கப்பட்டது');
         navigation.navigate('DashboardScreen');
       } else {
         const errorData = await response.json();
-        showToast(errorData?.message || 'Failed to delete job');
+        showToast(errorData?.message || (isEnglish ? 'Failed to delete job' : 'நீக்க முடியவில்லை'));
       }
     } catch (error) {
-      showToast('Network error occurred while deleting job');
+      showToast(isEnglish ? 'Network error occurred while deleting job' : 'பணி நீக்கும் போது நெட்வொர்க் பிழை');
     } finally {
       setLoading(false);
     }
   };
 
-  // Open modal to select vehicle
   const handleOpenVehicleModal = async () => {
     await fetchAllTrucks();
     setModalVisible(true);
@@ -101,35 +99,39 @@ export const AssignJobScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.heading}>Assigned Job Details</Text>
-        <Text style={styles.label}>Order Id:</Text>
+        <Text style={styles.heading}>{isEnglish ? 'Assigned Job Details' : 'ஒதுக்கப்பட்ட பணி விவரங்கள்'}</Text>
+
+        <Text style={styles.label}>{isEnglish ? 'Order Id:' : 'ஆர்டர் ஐடி:'}</Text>
         <Text style={styles.value}>{orderId}</Text>
-        <Text style={styles.label}>Job ID:</Text>
+
+        <Text style={styles.label}>{isEnglish ? 'Job ID:' : 'பணி ஐடி:'}</Text>
         <Text style={styles.value}>{jobId}</Text>
-        <Text style={styles.label}>Customer Name:</Text>
+
+        <Text style={styles.label}>{isEnglish ? 'Customer Name:' : 'வாடிக்கையாளர் பெயர்:'}</Text>
         <Text style={styles.value}>{customerName}</Text>
-        <Text style={styles.label}>Order Time:</Text>
+
+        <Text style={styles.label}>{isEnglish ? 'Order Time:' : 'ஆர்டர் நேரம்:'}</Text>
         <Text style={styles.value}>{orderTime}</Text>
 
         <View style={styles.vehicleRow}>
-          <Text style={styles.label}>Assigned Vehicle Number:</Text>
+          <Text style={styles.label}>{isEnglish ? 'Assigned Vehicle Number:' : 'ஒதுக்கப்பட்ட வாகன எண்:'}</Text>
           <TouchableOpacity onPress={handleOpenVehicleModal}>
-            <Text style={styles.changeText}>Change</Text>
+            <Text style={styles.changeText}>{isEnglish ? 'Change' : 'மாற்று'}</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.value}>{selectedVehicle || 'Not Assigned'}</Text>
+        <Text style={styles.value}>{selectedVehicle || (isEnglish ? 'Not Assigned' : 'ஒதுக்கப்படவில்லை')}</Text>
 
-        <Text style={styles.label}>Materials:</Text>
+        <Text style={styles.label}>{isEnglish ? 'Materials:' : 'பொருட்கள்:'}</Text>
         {materials && materials.length > 0 ? (
           materials.map((item, index) => (
             <View key={index} style={styles.materialBlock}>
               <Text style={styles.materialName}>{item.name}</Text>
-              <Text style={styles.materialInfo}>Qty: {item.quantity}</Text>
-              <Text style={styles.materialInfo}>Price: ₹{item.price}</Text>
+              <Text style={styles.materialInfo}>{isEnglish ? 'Qty:' : 'அளவு:'} {item.quantity}</Text>
+              <Text style={styles.materialInfo}>{isEnglish ? 'Price:' : 'விலை:'} ₹{item.price}</Text>
             </View>
           ))
         ) : (
-          <Text style={styles.value}>No materials listed</Text>
+          <Text style={styles.value}>{isEnglish ? 'No materials listed' : 'பொருட்கள் இல்லை'}</Text>
         )}
       </ScrollView>
 
@@ -140,14 +142,15 @@ export const AssignJobScreen = ({ route, navigation }) => {
           onPress={handleAssign}
           disabled={loading}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Assign Job</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{isEnglish ? 'Assign Job' : 'பணி ஒதுக்கவும்'}</Text>}
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.deleteButton, loading && { opacity: 0.6 }]}
           onPress={handleDelete}
           disabled={loading}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Delete Job</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{isEnglish ? 'Delete Job' : 'பணி நீக்கு'}</Text>}
         </TouchableOpacity>
       </View>
 
@@ -155,7 +158,7 @@ export const AssignJobScreen = ({ route, navigation }) => {
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select a Vehicle</Text>
+            <Text style={styles.modalTitle}>{isEnglish ? 'Select a Vehicle' : 'வாகனத்தைத் தேர்ந்தெடுக்கவும்'}</Text>
             <FlatList
               data={trucks}
               keyExtractor={(item) => item.id.toString()}
@@ -172,7 +175,7 @@ export const AssignJobScreen = ({ route, navigation }) => {
               onPress={() => setModalVisible(false)}
               style={styles.cancelButton}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{isEnglish ? 'Cancel' : 'ரத்து செய்யவும்'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -182,7 +185,6 @@ export const AssignJobScreen = ({ route, navigation }) => {
     </View>
   );
 };
-
 
 // Styles
 const styles = StyleSheet.create({

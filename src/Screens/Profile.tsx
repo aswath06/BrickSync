@@ -16,6 +16,7 @@ import { getToken } from '../services/authStorage';
 import { baseUrl, RegisterEndpoint } from '../../config';
 import { useNavigation } from '@react-navigation/native';
 import { useUserStore } from '../stores/useUserStore';
+import { useToggleStore } from '../stores/useToggleStore';
 import { moderateScale } from './utils/scalingUtils';
 
 const { width } = Dimensions.get('window');
@@ -30,13 +31,14 @@ export const Profile = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const user = useUserStore((state) => state.user);
   const userRole = user?.userrole;
+  const { isEnglish } = useToggleStore();
 
   const fetchUsers = async () => {
     try {
       setError(null);
       const token = await getToken();
       if (!token) {
-        setError('Token not found');
+        setError(isEnglish ? 'Token not found' : 'டோக்கன் கிடைக்கவில்லை');
         return;
       }
 
@@ -47,14 +49,14 @@ export const Profile = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Fetch error:', errorText);
-        throw new Error('Failed to fetch users');
+        throw new Error(isEnglish ? 'Failed to fetch users' : 'பயனர்களை ஏற்றுவதில் தோல்வி');
       }
 
       const data = await response.json();
       if (Array.isArray(data)) {
         setUsers(data);
       } else {
-        throw new Error('Invalid response format');
+        throw new Error(isEnglish ? 'Invalid response format' : 'தவறான பதிலின் வடிவம்');
       }
     } catch (err: any) {
       console.error('Error:', err);
@@ -77,13 +79,13 @@ export const Profile = () => {
   const getRoleLabel = (role: number) => {
     switch (role) {
       case 1:
-        return 'Admin';
+        return isEnglish ? 'Admin' : 'நிர்வாகி';
       case 2:
-        return 'Driver';
+        return isEnglish ? 'Driver' : 'ஓட்டுனர்';
       case 3:
-        return 'Customer';
+        return isEnglish ? 'Customer' : 'வாடிக்கையாளர்';
       default:
-        return 'Unknown';
+        return isEnglish ? 'Unknown' : 'தெரியாதவர்';
     }
   };
 
@@ -115,8 +117,12 @@ export const Profile = () => {
         </View>
       </View>
       <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.detail}>Balance: ₹{item.balance}</Text>
-      <Text style={styles.detail}>Phone: {item.phone}</Text>
+      <Text style={styles.detail}>
+        {isEnglish ? 'Balance' : 'மீதம்'}: ₹{item.balance}
+      </Text>
+      <Text style={styles.detail}>
+        {isEnglish ? 'Phone' : 'தொலைபேசி'}: {item.phone}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -142,11 +148,13 @@ export const Profile = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>User List</Text>
+      <Text style={styles.header}>
+        {isEnglish ? 'User List' : 'பயனர் பட்டியல்'}
+      </Text>
 
       <TextInput
         style={styles.searchInput}
-        placeholder="Search by name or phone"
+        placeholder={isEnglish ? 'Search by name or phone' : 'பெயர் அல்லது தொலைபேசியில் தேடுக'}
         placeholderTextColor="#999"
         value={searchQuery}
         onChangeText={setSearchQuery}
@@ -168,7 +176,9 @@ export const Profile = () => {
           }
         />
       ) : (
-        <Text style={styles.text}>No users found</Text>
+        <Text style={styles.text}>
+          {isEnglish ? 'No users found' : 'பயனர்கள் இல்லை'}
+        </Text>
       )}
 
       {userRole === 1 && (

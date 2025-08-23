@@ -12,12 +12,14 @@ import { useNavigation } from '@react-navigation/native';
 import { useTruckStore } from '../stores/useTruckStore';
 import { ArrowBack } from '../assets';
 import { useUserStore } from '../stores/useUserStore';
+import { useToggleStore } from '../stores/useToggleStore';
 import { moderateScale } from './utils/scalingUtils';
 
 export const DriverTruckView = ({ driverId }) => {
   const navigation = useNavigation();
   const { trucks, fetchTrucksByDriverId } = useTruckStore();
   const user = useUserStore((state) => state.user);
+  const { isEnglish } = useToggleStore();
 
   useEffect(() => {
     if (driverId) fetchTrucksByDriverId(driverId);
@@ -38,7 +40,7 @@ export const DriverTruckView = ({ driverId }) => {
   if (!truck) {
     return (
       <View style={styles.centered}>
-        <Text>No truck assigned</Text>
+        <Text>{isEnglish ? 'No truck assigned' : 'பிரசித்தி செய்யப்பட்ட லாரி இல்லை'}</Text>
       </View>
     );
   }
@@ -61,53 +63,56 @@ export const DriverTruckView = ({ driverId }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Truck</Text>
+        <Text style={styles.headerTitle}>
+          {isEnglish ? 'Your Truck' : 'உங்கள் லாரி'}
+        </Text>
         <TouchableOpacity>
-          <Text style={styles.changeBtn}>help</Text>
+          <Text style={styles.changeBtn}>{isEnglish ? 'Help' : 'உதவி'}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scroll}>
-        <Text style={styles.sectionTitle}>Truck details:</Text>
+        <Text style={styles.sectionTitle}>
+          {isEnglish ? 'Truck details:' : 'லாரி விவரங்கள்:'}
+        </Text>
 
         <View style={styles.card}>
           <Image
-  source={{
-    uri: truck.details.vehicleImage || 'https://example.com/default-truck.jpg', // fallback if no image
-  }}
-  style={styles.image}
-  resizeMode="contain"
-/>
-
+            source={{
+              uri: truck.details.vehicleImage || 'https://example.com/default-truck.jpg',
+            }}
+            style={styles.image}
+            resizeMode="contain"
+          />
 
           <Text style={styles.truckNumber}>{truck.number}</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Driver Name:</Text>
+            <Text style={styles.label}>{isEnglish ? 'Driver Name:' : 'ஓட்டுனர் பெயர்:'}</Text>
             <Text style={styles.value}>{user?.name || '-'}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Driver ID:</Text>
+            <Text style={styles.label}>{isEnglish ? 'Driver ID:' : 'ஓட்டுனர் ஐடி:'}</Text>
             <Text style={styles.value}>{Driverid || '-'}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Insurance:</Text>
+            <Text style={styles.label}>{isEnglish ? 'Insurance:' : 'காப்பீடு:'}</Text>
             <Text style={styles.value}>{formatDate(insurance)}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Permit:</Text>
+            <Text style={styles.label}>{isEnglish ? 'Permit:' : 'அனுமதி:'}</Text>
             <Text style={styles.value}>{formatDate(permit)}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Pollution Expiry:</Text>
+            <Text style={styles.label}>{isEnglish ? 'Pollution Expiry:' : 'பொலியூஷன் காலாவதி:'}</Text>
             <Text style={styles.value}>{formatDate(pollution)}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Fitness Date:</Text>
+            <Text style={styles.label}>{isEnglish ? 'Fitness Date:' : 'ஃபிட்னெஸ் தேதி:'}</Text>
             <Text style={styles.value}>{formatDate(fitness)}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Tyres Changed:</Text>
+            <Text style={styles.label}>{isEnglish ? 'Tyres Changed:' : 'டயர்கள் மாற்றம்:'}</Text>
             <Text style={styles.value}>{formatDate(tyreChangedDate)}</Text>
           </View>
 
@@ -121,7 +126,7 @@ export const DriverTruckView = ({ driverId }) => {
                 })
               }
             >
-              <Text style={styles.damageText}>Damage</Text>
+              <Text style={styles.damageText}>{isEnglish ? 'Damage' : 'நசிவு'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -133,7 +138,7 @@ export const DriverTruckView = ({ driverId }) => {
                 })
               }
             >
-              <Text style={styles.refuelText}>⛽ Refuel</Text>
+              <Text style={styles.refuelText}>⛽ {isEnglish ? 'Refuel' : 'எரிபொருள்'}</Text>
             </TouchableOpacity>
           </View>
         </View>

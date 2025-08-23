@@ -14,6 +14,7 @@ import {
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTruckStore } from '../stores/useTruckStore';
+import { useToggleStore } from '../stores/useToggleStore';
 import { ArrowBack } from '../assets';
 import { AddRefuelToVehicleEndpoint, baseUrl } from '../../config';
 import axios from 'axios';
@@ -38,9 +39,11 @@ export const RefuelHistory = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const isEnglish = useToggleStore((state) => state.isEnglish);
+
   const handleAddRefuel = async () => {
     if (!amount || !volume || !kilometer) {
-      alert('Please fill all fields.');
+      alert(isEnglish ? 'Please fill all fields.' : 'அனைத்து புலங்களையும் நிரப்பவும்.');
       return;
     }
 
@@ -78,7 +81,7 @@ export const RefuelHistory = () => {
       setModalVisible(false);
     } catch (error) {
       console.error('❌ Failed to add refuel entry:', error);
-      alert('Failed to submit refuel. Try again.');
+      alert(isEnglish ? 'Failed to submit refuel. Try again.' : 'சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.');
     } finally {
       setLoading(false);
     }
@@ -107,7 +110,7 @@ export const RefuelHistory = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowBack width={24} height={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Refuel History</Text>
+        <Text style={styles.headerTitle}>{isEnglish ? 'Refuel History' : 'எரிபொருள் வரலாறு'}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -122,20 +125,24 @@ export const RefuelHistory = () => {
               resizeMode="contain"
             />
             <Text style={styles.vehicleNumber}>{vehicleNumber}</Text>
-            <Text style={styles.mileageText}>Avg. Mileage: {calculateAverageMileage()}</Text>
+            <Text style={styles.mileageText}>
+              {isEnglish ? 'Avg. Mileage:' : 'சராசரி மைலேஜ்:'} {calculateAverageMileage()}
+            </Text>
             {history.length === 0 && (
-              <Text style={{ color: '#888', marginTop: 8 }}>No refuel records yet.</Text>
+              <Text style={{ color: '#888', marginTop: 8 }}>
+                {isEnglish ? 'No refuel records yet.' : 'இன்னும் எந்த எரிபொருள் பதிவு இல்லை.'}
+              </Text>
             )}
           </View>
         }
         contentContainerStyle={{ paddingBottom: 120 }}
         renderItem={({ item }) => (
           <View style={[styles.card, { marginHorizontal: 16 }]}>
-            <Text style={styles.text}>Date: {formatDate(item.date)}</Text>
-            <Text style={styles.text}>Amount: ₹{item.amount}</Text>
-            <Text style={styles.text}>Volume: {item.volume} L</Text>
-            <Text style={styles.text}>Kilometers: {item.kilometer} km</Text>
-            <Text style={styles.text}>Mileage: {item.mileage?.toFixed(2) ?? '-'} km/l</Text>
+            <Text style={styles.text}>{isEnglish ? 'Date:' : 'தேதி:'} {formatDate(item.date)}</Text>
+            <Text style={styles.text}>{isEnglish ? 'Amount:' : 'தொகை:'} ₹{item.amount}</Text>
+            <Text style={styles.text}>{isEnglish ? 'Volume:' : 'அளவு:'} {item.volume} L</Text>
+            <Text style={styles.text}>{isEnglish ? 'Kilometers:' : 'கிலோமீட்டர்கள்:'} {item.kilometer} km</Text>
+            <Text style={styles.text}>{isEnglish ? 'Mileage:' : 'மைலேஜ்:'} {item.mileage?.toFixed(2) ?? '-'} km/l</Text>
           </View>
         )}
       />
@@ -147,10 +154,10 @@ export const RefuelHistory = () => {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Refuel</Text>
+            <Text style={styles.modalTitle}>{isEnglish ? 'Add Refuel' : 'எரிபொருள் சேர்க்கவும்'}</Text>
 
             <TextInput
-              placeholder="Amount ₹"
+              placeholder={isEnglish ? 'Amount ₹' : 'தொகை ₹'}
               value={amount}
               onChangeText={setAmount}
               keyboardType="numeric"
@@ -158,7 +165,7 @@ export const RefuelHistory = () => {
               placeholderTextColor="#666"
             />
             <TextInput
-              placeholder="Volume in Litres"
+              placeholder={isEnglish ? 'Volume in Litres' : 'அளவு லிட்டரில்'}
               value={volume}
               onChangeText={setVolume}
               keyboardType="numeric"
@@ -166,7 +173,7 @@ export const RefuelHistory = () => {
               placeholderTextColor="#666"
             />
             <TextInput
-              placeholder="Kilometer"
+              placeholder={isEnglish ? 'Kilometer' : 'கிலோமீட்டர்'}
               value={kilometer}
               onChangeText={setKilometer}
               keyboardType="numeric"
@@ -200,7 +207,7 @@ export const RefuelHistory = () => {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.addBtnText}>Submit</Text>
+                  <Text style={styles.addBtnText}>{isEnglish ? 'Submit' : 'சமர்ப்பி'}</Text>
                 )}
               </TouchableOpacity>
 
@@ -209,7 +216,7 @@ export const RefuelHistory = () => {
                 onPress={() => setModalVisible(false)}
                 disabled={loading}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={styles.cancelBtnText}>{isEnglish ? 'Cancel' : 'ரத்து செய்யவும்'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -218,6 +225,7 @@ export const RefuelHistory = () => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
