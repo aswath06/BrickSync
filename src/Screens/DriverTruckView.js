@@ -59,17 +59,29 @@ export const DriverTruckView = ({ driverId }) => {
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowBack width={24} height={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isEnglish ? 'Your Truck' : 'உங்கள் லாரி'}
-        </Text>
-        <TouchableOpacity>
-          <Text style={styles.changeBtn}>{isEnglish ? 'Help' : 'உதவி'}</Text>
-        </TouchableOpacity>
-      </View>
+{/* Header */}
+{/* Header */}
+<View style={styles.header}>
+  <TouchableOpacity onPress={() => navigation.goBack()}>
+    <ArrowBack width={24} height={24} color="#000" />
+  </TouchableOpacity>
+  <Text style={styles.headerTitle}>
+    {isEnglish ? 'Your Truck' : 'உங்கள் லாரி'}
+  </Text>
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate('TodaySummary', {
+        vehicleNumber: truck.number, // pass the vehicle number
+      })
+    }
+  >
+    <Text style={styles.changeBtn}>
+      {isEnglish ? 'Today Summary' : 'இன்றைய சுருக்கம்'}
+    </Text>
+  </TouchableOpacity>
+</View>
+
+
 
       <ScrollView style={styles.scroll}>
         <Text style={styles.sectionTitle}>

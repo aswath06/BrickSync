@@ -6,6 +6,8 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Alert,
+  Image,
 } from 'react-native';
 import { moderateScale } from './utils/scalingUtils';
 import { baseUrl } from '../../config';
@@ -14,56 +16,89 @@ import { ArrowBack, ClockIcon } from '../assets';
 import moment from 'moment';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-export const TodaySummary = ({ navigation }: any) => {
+export const TodaySummary = ({ navigation, route }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${baseUrl}/api/orders`);
-      const data = await response.json();
-      if (response.ok || Array.isArray(data)) {
-        setOrders(data);
-      } else {
-        console.error('Failed to fetch orders', data);
-      }
-    } catch (err) {
-      console.error('Network error:', err);
-    } finally {
-      setLoading(false);
+  const vehicleNumber = route?.params?.vehicleNumber || null;
+
+  const fetchOrders = async (date) => {
+  try {
+    setLoading(true);
+    const formattedDate = moment(date).format('YYYY-MM-DD');
+    let url = `${baseUrl}/api/orders/date/${formattedDate}`;
+    console.log('Fetching orders from URL:', url);
+
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log('Fetched orders:', data);
+
+    if (response.ok) {
+      // Filter by vehicle number if given
+      const filteredOrders = vehicleNumber
+        ? data.filter(order => order.vehicleNumber === vehicleNumber)
+        : data;
+
+      // Parse products
+      const parsedOrders = filteredOrders.map(order => ({
+        ...order,
+        products: Array.isArray(order.products)
+          ? order.products.map(p => (typeof p === 'string' ? JSON.parse(p) : p))
+          : [],
+      }));
+
+      setOrders(parsedOrders);
+    } else {
+      Alert.alert('Error', data.message || 'Failed to fetch orders');
+      setOrders([]);
     }
-  };
+  } catch (err) {
+    console.error('Network error:', err);
+    Alert.alert('Error', 'Network error while fetching orders');
+    setOrders([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(selectedDate);
+  }, [selectedDate, vehicleNumber]);
 
-  // Filter orders by selected date
-  const filteredOrders = orders.filter(order =>
-    moment(order.createdAt).isSame(selectedDate, 'day')
-  );
-
-  // Calculate total sales for filtered orders
-  const totalSales = filteredOrders.reduce((sum, order) => {
-    const orderTotal = order.products?.reduce((pSum, product) => {
-      return pSum + Number(product.price) * Number(product.quantity);
-    }, 0) || 0;
+  const totalSales = orders.reduce((sum, order) => {
+    const orderTotal =
+      order.products?.reduce((pSum, product) => {
+        const price = Number(product.price) || 0;
+        const quantity = Number(product.quantity) || 0;
+        return pSum + price * quantity;
+      }, 0) || 0;
     return sum + orderTotal;
   }, 0);
 
   const renderOrder = ({ item }) => {
-    const orderDate = moment(item.createdAt).format('DD MMM YYYY, hh:mm A');
+    const orderDate = moment(item.createdAt || item.date).format(
+      'DD MMM YYYY, hh:mm A'
+    );
 
     return (
       <View style={styles.card}>
         <Text style={styles.date}>{orderDate}</Text>
         <Text style={styles.userName}>Customer: {item.User?.name || 'N/A'}</Text>
+        <Text style={styles.vehicleNumber}>Vehicle: {item.vehicleNumber || 'N/A'}</Text>
+
         {item.products && item.products.length > 0 ? (
           item.products.map((product, idx) => (
             <View key={idx} style={styles.productBlock}>
+              {product.image && (
+                <Image
+                  source={{ uri: product.image }}
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+              )}
               <Text style={styles.productName}>{product.name}</Text>
               <Text style={styles.productInfo}>
                 Quantity: {product.quantity} | Price: ₹{product.price}
@@ -120,10 +155,13 @@ export const TodaySummary = ({ navigation }: any) => {
       )}
 
       <FlatList
-        data={filteredOrders}
-        keyExtractor={(item) => item.id.toString()}
+        data={orders}
+        keyExtractor={(item) => item.orderId?.toString() || item.id?.toString()}
         renderItem={renderOrder}
-        contentContainerStyle={{ padding: moderateScale(16), paddingBottom: moderateScale(80) }}
+        contentContainerStyle={{
+          padding: moderateScale(16),
+          paddingBottom: moderateScale(80),
+        }}
         ListEmptyComponent={
           <Text style={{ textAlign: 'center', marginTop: 20, color: '#777' }}>
             No orders found for this date.
@@ -133,7 +171,11 @@ export const TodaySummary = ({ navigation }: any) => {
 
       {/* Total Sales */}
       <View style={styles.totalContainer}>
-        <Text style={styles.totalText}>Today's Total Sales: ₹{totalSales}</Text>
+        {!vehicleNumber && (
+  <View style={styles.totalContainer}>
+    <Text style={styles.totalText}>Today's Total Sales: ₹{totalSales}</Text>
+  </View>
+)}
       </View>
     </View>
   );
@@ -167,10 +209,27 @@ const styles = StyleSheet.create({
     elevation: moderateScale(3),
   },
   date: { fontSize: moderateScale(12), color: '#777', marginBottom: moderateScale(6) },
-  userName: { fontSize: moderateScale(16), fontWeight: 'bold', color: '#1E1E1E', marginBottom: moderateScale(8) },
-  productBlock: { backgroundColor: '#e9f1ff', borderRadius: moderateScale(8), padding: moderateScale(8), marginBottom: moderateScale(6) },
+  userName: {
+    fontSize: moderateScale(16),
+    fontWeight: 'bold',
+    color: '#1E1E1E',
+    marginBottom: moderateScale(4),
+  },
+  vehicleNumber: { fontSize: moderateScale(14), color: '#333', marginBottom: moderateScale(8) },
+  productBlock: {
+    backgroundColor: '#e9f1ff',
+    borderRadius: moderateScale(8),
+    padding: moderateScale(8),
+    marginBottom: moderateScale(6),
+  },
   productName: { fontSize: moderateScale(14), fontWeight: '600', color: '#000' },
   productInfo: { fontSize: moderateScale(12), color: '#333' },
+  productImage: {
+    width: '100%',
+    height: moderateScale(100),
+    borderRadius: moderateScale(8),
+    marginBottom: moderateScale(6),
+  },
   totalContainer: {
     position: 'absolute',
     bottom: 0,
