@@ -75,7 +75,6 @@ export const CreateAccountScreen = ({ navigation, route }) => {
       userrole: 3,
     };
 
-    console.log('🔍 Sending registration payload:', payload);
 
     try {
       const response = await fetch(`${baseUrl}${RegisterEndpoint}`, {
@@ -88,7 +87,6 @@ export const CreateAccountScreen = ({ navigation, route }) => {
 
       const data = await response.json();
 
-      console.log('📩 Registration response:', response.status, data);
 
       if (!response.ok) {
         Alert.alert('Registration Failed', data.message || 'Something went wrong');

@@ -87,7 +87,7 @@ export const DamageHistory = ({ route }) => {
       });
 
       await axios.post(`${baseUrl}${AddServiceToVehicleEndpoint(vehicleId)}`, payload);
-      console.log('✅ Damage report submitted');
+
     } catch (err) {
       console.error('❌ Failed to submit damage report:', err?.response?.data || err.message);
     } finally {

@@ -88,8 +88,7 @@ export const LoginScreen = ({ navigation, route }) => {
 
       const { token, user } = data;
       await storeToken(token);
-      console.log('✅ JWT Token:', token);
-      console.log('✅ Full User:', user);
+
       return { token, user };
     } catch (err) {
       console.error('User fetch error:', err);
@@ -243,7 +242,7 @@ export const LoginScreen = ({ navigation, route }) => {
             const result = await getUserAndToken();
             if (result) {
               setUser(result.user);
-              console.log('Login Successful');
+
               navigation.navigate('DashboardScreen');
             }
           } finally {

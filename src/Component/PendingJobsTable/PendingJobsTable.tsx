@@ -45,7 +45,6 @@ export const PendingJobsTable: React.FC<Props> = ({ title = 'Pending Jobs', jobs
     const statusStyle = getStatusStyle(item.status);
 
     const handleStatusPress = () => {
-  console.log('Order ID:', item.orderId); // 👈 This logs orderid to the console
   if (item.status === 'Assign') {
     navigation.navigate('AssignJob', {
       jobId: item.id,

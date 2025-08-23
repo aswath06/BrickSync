@@ -29,11 +29,10 @@ export const TodaySummary = ({ navigation, route }) => {
     setLoading(true);
     const formattedDate = moment(date).format('YYYY-MM-DD');
     let url = `${baseUrl}/api/orders/date/${formattedDate}`;
-    console.log('Fetching orders from URL:', url);
 
     const response = await fetch(url);
     const data = await response.json();
-    console.log('Fetched orders:', data);
+
 
     if (response.ok) {
       // Filter by vehicle number if given

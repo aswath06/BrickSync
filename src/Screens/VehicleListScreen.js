@@ -12,7 +12,6 @@ export const VehicleListScreen = ({ route }) => {
     axios
       .get(`http://localhost:3000/api/vehicles/user/${customerId}`)
       .then(res => setVehicles(res.data))
-      .catch(err => console.log(err));
   }, []);
 
   const renderItem = ({ item }) => (
