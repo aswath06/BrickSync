@@ -32,6 +32,7 @@ type Statement = {
   invoiceNo?: string;
   status?: string;
   image?: string;
+  transportCharge?: number;
 };
 
 type Props = {
@@ -157,36 +158,36 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   };
 
   const handleOrderPress = async (orderId: string) => {
-  try {
-    setLoadingOrder(true);
-    const res = await fetch(`${baseUrl}/api/orders/${orderId}`);
-    if (!res.ok) throw new Error('Failed to fetch order details');
-    const data = await res.json();
+    try {
+      setLoadingOrder(true);
+      const res = await fetch(`${baseUrl}/api/orders/${orderId}`);
+      if (!res.ok) throw new Error('Failed to fetch order details');
+      const data = await res.json();
 
-    const orderDetails: Statement = {
-      date: data.createdAt,
-      amount: data.products.reduce(
-        (acc: number, p: any) => acc + parseFloat(p.price) * parseFloat(p.quantity),
-        0
-      ),
-      orderId: data.orderId,
-      modeOfPayment: 'Order',
-      products: data.products,
-      vehicleNo: data.vehicleNumber,
-      invoiceNo: data.invoiceNo,
-      status: data.status,
-      image: data.image,
-    };
+      const orderDetails: Statement = {
+        date: data.createdAt,
+        amount: data.products.reduce(
+          (acc: number, p: any) => acc + parseFloat(p.price) * parseFloat(p.quantity),
+          0
+        ),
+        orderId: data.orderId,
+        modeOfPayment: 'Order',
+        products: data.products,
+        vehicleNo: data.vehicleNumber,
+        invoiceNo: data.invoiceNo,
+        status: data.status,
+        image: data.image,
+        transportCharge: data.transportCharge ?? 0, 
+      };
 
-    setSelectedOrder(orderDetails);
-    setOrderModalVisible(true);
-  } catch (err: any) {
-    Alert.alert('Error', err.message || 'Failed to fetch order');
-  } finally {
-    setLoadingOrder(false);
-  }
-};
-
+      setSelectedOrder(orderDetails);
+      setOrderModalVisible(true);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to fetch order');
+    } finally {
+      setLoadingOrder(false);
+    }
+  };
 
   // Apply search and sort
   const applyFilter = () => {
@@ -247,38 +248,37 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
   };
 
   const renderItem = ({ item }: { item: Statement }) => (
-  <TouchableOpacity
-    onPress={() => {
-      if (item.modeOfPayment === 'Order' && item.orderId) {
-        handleOrderPress(item.orderId);
-      }
-    }}
-  >
-    <View style={styles.row}>
-      <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
-      <Text style={styles.cell}>{item.modeOfPayment}</Text>
-      <Text
-        style={[styles.cell, { flex: 2, color: item.modeOfPayment === 'Order' ? '#007bff' : '#333' }]}
-        numberOfLines={1}
-        ellipsizeMode="tail"
-      >
-        {item.modeOfPayment === 'Received'
-          ? item.typeOfPayment ?? '-'
-          : item.orderId ?? '-'}
-      </Text>
-      <Text
-        style={[
-          styles.cell,
-          { color: item.modeOfPayment === 'Order' ? 'red' : 'green', fontWeight: 'bold' },
-        ]}
-      >
-        ₹{item.amount}
-      </Text>
-    </View>
-  </TouchableOpacity>
-);
+    <TouchableOpacity
+      onPress={() => {
+        if (item.modeOfPayment === 'Order' && item.orderId) {
+          handleOrderPress(item.orderId);
+        }
+      }}
+    >
+      <View style={styles.row}>
+        <Text style={styles.cell}>{new Date(item.date).toLocaleString()}</Text>
+        <Text style={styles.cell}>{item.modeOfPayment}</Text>
+        <Text
+          style={[styles.cell, { flex: 2, color: item.modeOfPayment === 'Order' ? '#007bff' : '#333' }]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {item.modeOfPayment === 'Received'
+            ? item.typeOfPayment ?? '-'
+            : item.orderId ?? '-'}
+        </Text>
+<Text
+  style={[
+    styles.cell,
+    { color: item.modeOfPayment === 'Order' ? 'red' : 'green', fontWeight: 'bold' },
+  ]}
+>
+  ₹{item.amount + (item.transportCharge ?? 0)}
+</Text>
 
-
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -350,7 +350,6 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentTall}>
             <Text style={styles.modalTitleColorful}>Add Received Amount</Text>
-
             <TextInput
               style={styles.input}
               placeholder="Enter amount"
@@ -396,7 +395,6 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentTall}>
             <Text style={styles.modalTitleColorful}>Advance Payment</Text>
-
             <TextInput
               style={styles.input}
               placeholder="Enter advance amount"
@@ -435,6 +433,8 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Order Details Modal */}
       <Modal
         animationType="slide"
         transparent
@@ -459,6 +459,12 @@ export const StatementPage: React.FC<Props> = ({ route }) => {
                     </Text>
                   ))}
                 </View>
+                {selectedOrder.transportCharge !== undefined && (
+  <Text style={styles.orderText}>
+    Transport Charge: ₹{selectedOrder.transportCharge}
+  </Text>
+)}
+
                 <Text style={styles.orderText}>Status: {selectedOrder.status ?? '-'}</Text>
                 <Text style={styles.orderText}>Date: {new Date(selectedOrder.date).toLocaleString()}</Text>
                 {selectedOrder.image && (
@@ -550,4 +556,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: moderateScale(16),
   },
+  orderImage: { width: '100%', height: 200, marginTop: 6, borderRadius: 8 },
 });

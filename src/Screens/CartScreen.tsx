@@ -284,6 +284,7 @@ export const CartScreen = ({ navigation, route }) => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FB', padding: moderateScale(16) },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: moderateScale(42), marginBottom: moderateScale(16) },
