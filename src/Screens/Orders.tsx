@@ -162,7 +162,7 @@ export const Orders = ({ navigation }) => {
       {/* Product List */}
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <LottieView source={require('../assets/lottie/Roboloading.json')} autoPlay loop style={{ width: 150, height: 150 }} />
+          <LottieView source={require('../assets/lottie/loading.json')} autoPlay loop style={{ width: 150, height: 150 }} />
         </View>
       ) : (
         <FlatList

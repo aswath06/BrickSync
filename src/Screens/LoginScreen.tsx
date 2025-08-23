@@ -26,6 +26,8 @@ export const LoginScreen = ({ navigation, route }) => {
   const [verifying, setVerifying] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const setUser = useUserStore((state) => state.setUser);
+  const [showPassword, setShowPassword] = useState(false);
+
 
   const handlePhoneChange = (value: string) => {
     const filtered = value.replace(/[^0-9]/g, '').slice(0, 10);
@@ -176,15 +178,21 @@ export const LoginScreen = ({ navigation, route }) => {
 
           <Text style={[styles.label, { marginTop: 15 }]}>Password</Text>
           <View style={styles.inputWrapper}>
-            <TextInput
-              placeholder="Enter your password"
-              placeholderTextColor="#888"
-              style={styles.input}
-              secureTextEntry
-              value={password}
-              onChangeText={(text) => setPassword(text)}
-            />
-          </View>
+  <TextInput
+    placeholder="Enter your password"
+    placeholderTextColor="#888"
+    style={[styles.input, { flex: 1 }]}
+    secureTextEntry={!showPassword}
+    value={password}
+    onChangeText={(text) => setPassword(text)}
+  />
+  <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
+    <Text style={{ fontSize: 18, color: '#007bff' }}>
+      {showPassword ? '🙈' : '👁️'}
+    </Text>
+  </TouchableOpacity>
+</View>
+
           {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
       )}

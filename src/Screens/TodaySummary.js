@@ -116,10 +116,10 @@ export const TodaySummary = ({ navigation, route }) => {
     return (
       <View style={styles.loading}>
         <LottieView
-          source={require('../assets/lottie/Roboloading.json')}
+          source={require('../assets/lottie/loading.json')}
           autoPlay
           loop
-          style={{ width: 150, height: 150 }}
+          style={{ width: 300, height: 300 }}
         />
       </View>
     );

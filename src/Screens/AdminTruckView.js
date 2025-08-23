@@ -128,7 +128,7 @@ export const AdminTruckView = ({ overrideTrucks }) => {
     return (
       <View style={styles.loaderContainer}>
         <LottieView
-          source={require('../assets/lottie/Roboloading.json')}
+          source={require('../assets/lottie/loading.json')}
           autoPlay
           loop
           style={{ width: 180, height: 180 }}
@@ -231,6 +231,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: moderateScale(20),
     fontWeight: 'bold',
+    color:'black'
   },
   statusContainer: {
     flexDirection: 'row',

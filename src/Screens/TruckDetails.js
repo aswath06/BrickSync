@@ -179,16 +179,17 @@ const TruckDetails = ({ route, navigation }) => {
               <ActivityIndicator size="large" color="#1976D2" style={{ marginVertical: 20 }} />
             ) : (
               <FlatList
-                data={drivers}
-                keyExtractor={(item) => item.userid.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => assignDriver(item.userid)}>
-                    <View style={styles.driverRow}>
-                      <Text style={styles.driverName}>{item.name}</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              />
+  data={drivers}
+  keyExtractor={(item) => item.userid.toString()}
+  renderItem={({ item }) => (
+    <TouchableOpacity onPress={() => assignDriver(item.userid)}>
+      <View style={styles.driverRow}>
+        <Text style={styles.driverName}>{item.name}</Text>
+      </View>
+    </TouchableOpacity>
+  )}
+/>
+
             )}
             <TouchableOpacity
               onPress={() => setShowDrivers(false)}
@@ -215,7 +216,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
-  headerText: { flex: 1, textAlign: 'center', fontSize: moderateScale(18), fontWeight: 'bold' },
+  headerText: { flex: 1, textAlign: 'center', fontSize: moderateScale(18), fontWeight: 'bold',color:'black' },
   truckNumberContainer: {
     backgroundColor: '#4caf50',
     marginHorizontal: moderateScale(16),
@@ -307,9 +308,9 @@ const styles = StyleSheet.create({
   },
   modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContainer: { width: '80%', backgroundColor: '#fff', borderRadius: 12, padding: 16, maxHeight: '70%' },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color:'black' },
   driverRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' },
-  driverName: { fontSize: 16 },
+  driverName: { fontSize: 16, color: '#000' },
   closeBtn: { marginTop: 16, padding: 10, backgroundColor: '#1976D2', borderRadius: 8, alignItems: 'center' },
   closeText: { color: '#fff', fontWeight: 'bold' },
 });
