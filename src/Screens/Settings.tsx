@@ -214,13 +214,36 @@ export const Settings = () => {
               value={formData.dob}
               onChangeText={(text) => handleChange('dob', text)}
             />
-            <TextInput
-              style={[styles.input, { color: '#000' }]}
-              placeholder={isEnglish ? 'Gender' : 'பாலினம்'}
-              placeholderTextColor="#888"
-              value={formData.gender}
-              onChangeText={(text) => handleChange('gender', text)}
-            />
+
+            {/* Gender Chips */}
+            <Text style={styles.label}>{isEnglish ? 'Gender' : 'பாலினம்'}</Text>
+            <View style={styles.chipContainer}>
+              {['Male', 'Female', 'Other'].map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.chip,
+                    formData.gender === option && styles.selectedChip,
+                  ]}
+                  onPress={() => handleChange('gender', option)}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      formData.gender === option && styles.selectedChipText,
+                    ]}
+                  >
+                    {isEnglish
+                      ? option
+                      : option === 'Male'
+                      ? 'ஆண்'
+                      : option === 'Female'
+                      ? 'பெண்'
+                      : 'மற்றவை'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: moderateScale(16) }}>
               <TouchableOpacity style={styles.saveButton} onPress={handleSaveEdit} disabled={loading}>
@@ -267,4 +290,10 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: moderateScale(8), padding: moderateScale(10), marginBottom: moderateScale(12), color: '#000' },
   saveButton: { backgroundColor: '#4CAF50', padding: moderateScale(12), borderRadius: moderateScale(8), flex: 1, marginRight: moderateScale(8), alignItems: 'center' },
   cancelButton: { backgroundColor: '#F44336', padding: moderateScale(12), borderRadius: moderateScale(8), flex: 1, marginLeft: moderateScale(8), alignItems: 'center' },
+  label: { fontSize: moderateScale(14), fontWeight: '600', marginBottom: moderateScale(6), color: '#000' },
+  chipContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: moderateScale(12) },
+  chip: { paddingVertical: moderateScale(8), paddingHorizontal: moderateScale(16), borderRadius: moderateScale(20), borderWidth: 1, borderColor: '#ccc', marginHorizontal: 4 },
+  chipText: { fontSize: moderateScale(14), color: '#333' },
+  selectedChip: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  selectedChipText: { color: '#fff', fontWeight: '600' },
 });

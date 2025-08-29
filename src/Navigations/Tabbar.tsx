@@ -1,30 +1,29 @@
 import React from 'react';
-import {StyleSheet, View, TouchableOpacity, Text} from 'react-native';
+import {StyleSheet, View, TouchableOpacity, Text, Platform} from 'react-native';
 import {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {
+  CartScreen,
   ClockIcon,
   FastTruck,
   Homeicon,
-  MenuIcon,
   PersonIcon,
   SettingNewIcon,
-  SettingsIcon,
-  TruckIcon,
 } from '../assets/icons';
+import { moderateScale } from '../Screens/utils/scalingUtils';
 
 const getIcons = (routeName: string, isFocused: boolean) => {
-  const color = isFocused ? '#1577EA' : 'grey';
+  const color = isFocused ? '#1577EA' : '#9E9E9E';
   switch (routeName) {
     case 'Truck':
-      return <FastTruck color={color} width={24} height={24} />;
+      return <FastTruck color={color} width={26} height={26} />;
     case 'Orders':
-      return <ClockIcon color={color} width={24} height={24} />;
+      return <CartScreen color={color} width={26} height={26} />;
     case 'Dashboard':
-      return <Homeicon color={color} width={24} height={24} />;
+      return <Homeicon color={color} width={26} height={26} />;
     case 'Profile':
-      return <PersonIcon color={color} width={24} height={24} />;
+      return <PersonIcon color={color} width={26} height={26} />;
     case 'Settings':
-      return <SettingNewIcon color={color} width={24} height={24} />;
+      return <SettingNewIcon color={color} width={26} height={26} />;
     default:
       return null;
   }
@@ -72,6 +71,7 @@ export default function Tabbar({
         return (
           <TouchableOpacity
             key={route.key}
+            accessibilityRole="button"
             accessibilityState={isFocused ? {selected: true} : {}}
             onPress={onPress}
             onLongPress={onLongPress}
@@ -85,11 +85,10 @@ export default function Tabbar({
                 {getIcons(route.name, isFocused)}
               </View>
               <Text
-                style={{
-                  color: isFocused ? '#1577EA' : 'grey',
-                  fontSize: 12,
-                  marginTop: 4,
-                }}>
+                style={[
+                  styles.label,
+                  {color: isFocused ? '#1577EA' : '#9E9E9E'},
+                ]}>
                 {label}
               </Text>
             </View>
@@ -105,9 +104,21 @@ const useStyles = () =>
     container: {
       flexDirection: 'row',
       backgroundColor: '#fff',
-      paddingVertical: 8,
-      borderTopWidth: 1,
-      borderTopColor: 'rgba(0, 0, 0, 0.1)',
+      paddingVertical: 10,
+      borderTopWidth: 0,
+      borderTopRightRadius:moderateScale(30),
+      borderTopLeftRadius:moderateScale(30),
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 6,
+          shadowOffset: {width: 0, height: -2},
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
     },
     pressable: {
       flex: 1,
@@ -117,14 +128,20 @@ const useStyles = () =>
       alignItems: 'center',
     },
     iconWrapper: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       justifyContent: 'center',
       alignItems: 'center',
     },
+    
     iconWrapperFocused: {
-      backgroundColor: '#E5F0FF', // light blue background when focused
-      borderRadius:30,
+      backgroundColor: '#E5F0FF',
+      borderRadius: 22,
+    },
+    label: {
+      fontSize: 12,
+      marginTop: 4,
+      fontWeight: '500',
     },
   });

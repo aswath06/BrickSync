@@ -18,3 +18,4 @@ export * from './TwoPersonIcon';
 export * from './DropdownIcon';
 export * from './FastTruck';
 export * from './SettingNewIcon';
+export * from './CartScreen';
