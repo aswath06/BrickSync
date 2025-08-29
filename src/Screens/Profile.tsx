@@ -29,6 +29,7 @@ export const Profile = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<number | null>(null); // NEW: role filter
   const user = useUserStore((state) => state.user);
   const userRole = user?.userrole;
   const { isEnglish } = useToggleStore();
@@ -140,7 +141,13 @@ export const Profile = () => {
       : users.filter((u) => u?.userrole === 1)
     : [];
 
-  const searchedUsers = filteredUsers.filter(
+  // Apply role filter
+  const roleFilteredUsers = roleFilter
+    ? filteredUsers.filter((u) => u?.userrole === roleFilter)
+    : filteredUsers;
+
+  // Apply search
+  const searchedUsers = roleFilteredUsers.filter(
     (u) =>
       u?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u?.phone?.toString().includes(searchQuery)
@@ -159,6 +166,34 @@ export const Profile = () => {
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
+
+      {/* Filter Chips */}
+      <View style={styles.filterRow}>
+        {[ 
+          { label: isEnglish ? 'All' : 'அனைத்து', value: null },
+          { label: getRoleLabel(1), value: 1 },
+          { label: getRoleLabel(2), value: 2 },
+          { label: getRoleLabel(3), value: 3 },
+        ].map((chip) => (
+          <TouchableOpacity
+            key={chip.label}
+            style={[
+              styles.chip,
+              roleFilter === chip.value && styles.chipSelected,
+            ]}
+            onPress={() => setRoleFilter(chip.value)}
+          >
+            <Text
+              style={[
+                styles.chipText,
+                roleFilter === chip.value && styles.chipTextSelected,
+              ]}
+            >
+              {chip.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {error ? (
         <Text style={styles.errorText}>⚠️ {error}</Text>
@@ -214,7 +249,34 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     paddingHorizontal: moderateScale(12),
     backgroundColor: '#fff',
+    marginBottom: moderateScale(10),
+  },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginBottom: moderateScale(16),
+    flexWrap: 'wrap',
+    gap: moderateScale(8),
+  },
+  chip: {
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(6),
+    borderRadius: moderateScale(16),
+    backgroundColor: '#eee',
+    marginHorizontal: moderateScale(4),
+    marginBottom: moderateScale(8),
+  },
+  chipSelected: {
+    backgroundColor: '#007bff',
+  },
+  chipText: {
+    fontSize: moderateScale(14),
+    color: '#333',
+    fontWeight: '500',
+  },
+  chipTextSelected: {
+    color: '#fff',
+    fontWeight: '600',
   },
   row: {
     justifyContent: 'space-between',

@@ -16,3 +16,5 @@ export * from './BrickIcon';
 export * from './FrontTruck';
 export * from './TwoPersonIcon';
 export * from './DropdownIcon';
+export * from './FastTruck';
+export * from './SettingNewIcon';

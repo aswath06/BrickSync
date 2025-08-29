@@ -3,9 +3,11 @@ import {StyleSheet, View, TouchableOpacity, Text} from 'react-native';
 import {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {
   ClockIcon,
+  FastTruck,
   Homeicon,
   MenuIcon,
   PersonIcon,
+  SettingNewIcon,
   SettingsIcon,
   TruckIcon,
 } from '../assets/icons';
@@ -14,7 +16,7 @@ const getIcons = (routeName: string, isFocused: boolean) => {
   const color = isFocused ? '#1577EA' : 'grey';
   switch (routeName) {
     case 'Truck':
-      return <TruckIcon color={color} width={24} height={24} />;
+      return <FastTruck color={color} width={24} height={24} />;
     case 'Orders':
       return <ClockIcon color={color} width={24} height={24} />;
     case 'Dashboard':
@@ -22,7 +24,7 @@ const getIcons = (routeName: string, isFocused: boolean) => {
     case 'Profile':
       return <PersonIcon color={color} width={24} height={24} />;
     case 'Settings':
-      return <SettingsIcon color={color} width={24} height={24} />;
+      return <SettingNewIcon color={color} width={24} height={24} />;
     default:
       return null;
   }

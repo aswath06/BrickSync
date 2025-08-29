@@ -34,6 +34,14 @@ export const AssignJobScreen = ({ route, navigation }) => {
     }
   };
 
+  // Navigate & reset stack
+  const goToDashboard = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'DashboardScreen' }],
+    });
+  };
+
   // Assign job
   const handleAssign = async () => {
     if (!selectedVehicle) {
@@ -51,7 +59,7 @@ export const AssignJobScreen = ({ route, navigation }) => {
 
       if (response.ok) {
         showToast(isEnglish ? 'Job assigned successfully' : 'பணி வெற்றிகரமாக ஒதுக்கப்பட்டது');
-        navigation.navigate('DashboardScreen');
+        goToDashboard();
       } else {
         const errorData = await response.json();
         showToast(errorData?.message || (isEnglish ? 'Assignment failed' : 'ஒதுக்கீடு தோல்வி'));
@@ -74,7 +82,7 @@ export const AssignJobScreen = ({ route, navigation }) => {
 
       if (response.ok) {
         showToast(isEnglish ? 'Job deleted successfully' : 'பணி நீக்கப்பட்டது');
-        navigation.navigate('DashboardScreen');
+        goToDashboard();
       } else {
         const errorData = await response.json();
         showToast(errorData?.message || (isEnglish ? 'Failed to delete job' : 'நீக்க முடியவில்லை'));
@@ -122,23 +130,22 @@ export const AssignJobScreen = ({ route, navigation }) => {
         <Text style={styles.value}>{selectedVehicle || (isEnglish ? 'Not Assigned' : 'ஒதுக்கப்படவில்லை')}</Text>
 
         <Text style={styles.label}>{isEnglish ? 'Materials:' : 'பொருட்கள்:'}</Text>
-{materials && materials.length > 0 ? (
-  materials.map((item, index) => (
-    <View key={index} style={styles.materialBlock}>
-      <Text style={styles.materialName}>{item.name}</Text>
-      <Text style={styles.materialInfo}>{isEnglish ? 'Qty:' : 'அளவு:'} {item.quantity}</Text>
-      <Text style={styles.materialInfo}>{isEnglish ? 'Price:' : 'விலை:'} ₹{item.price}</Text>
-      {item.size && (
-        <Text style={[styles.materialInfo, { fontWeight: 'bold', color: '#1E90FF' }]}>
-          {isEnglish ? 'Size:' : 'வகை:'} {item.size}
-        </Text>
-      )}
-    </View>
-  ))
-) : (
-  <Text style={styles.value}>{isEnglish ? 'No materials listed' : 'பொருட்கள் இல்லை'}</Text>
-)}
-
+        {materials && materials.length > 0 ? (
+          materials.map((item, index) => (
+            <View key={index} style={styles.materialBlock}>
+              <Text style={styles.materialName}>{item.name}</Text>
+              <Text style={styles.materialInfo}>{isEnglish ? 'Qty:' : 'அளவு:'} {item.quantity}</Text>
+              <Text style={styles.materialInfo}>{isEnglish ? 'Price:' : 'விலை:'} ₹{item.price}</Text>
+              {item.size && (
+                <Text style={[styles.materialInfo, { fontWeight: 'bold', color: '#1E90FF' }]}>
+                  {isEnglish ? 'Size:' : 'வகை:'} {item.size}
+                </Text>
+              )}
+            </View>
+          ))
+        ) : (
+          <Text style={styles.value}>{isEnglish ? 'No materials listed' : 'பொருட்கள் இல்லை'}</Text>
+        )}
       </ScrollView>
 
       {/* Buttons */}
