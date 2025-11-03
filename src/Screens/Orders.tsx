@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,21 +7,20 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import LottieView from 'lottie-react-native';
 import { ArrowBack, BagIcon, FrontTruck } from '../assets';
 import { SearchIcon } from '../assets/icons/SearchIcon';
 import { getToken } from '../services/authStorage';
 import { baseUrl } from '../../config';
-import { useProductStore } from '../stores/useProductStore'; 
+import { useProductStore } from '../stores/useProductStore';
 import { useUserStore } from '../stores/useUserStore';
 import { useToggleStore } from '../stores/useToggleStore';
-import LottieView from 'lottie-react-native';
 import { moderateScale } from './utils/scalingUtils';
 
-const filterCategories = ['All', 'Cement', 'Sand', 'Bricks'];
+const filterCategories = ['All', 'Cements', 'Sand', 'Bricks'];
 
 export const Orders = ({ navigation }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
@@ -30,61 +29,64 @@ export const Orders = ({ navigation }) => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const user = useUserStore((state) => state.user);
   const { isEnglish } = useToggleStore();
-
-  const products = useProductStore((state) => state.products);
-  const setProducts = useProductStore((state) => state.setProducts);
+  const { products, setProducts } = useProductStore();
 
   const userRole = user?.userrole;
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
-      const response = await fetch(`${baseUrl}/api/products`, {
+      const res = await fetch(`${baseUrl}/api/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await response.json();
-      if (response.ok) setProducts(data);
-      else console.error('Fetch error:', data);
-    } catch (error) {
-      console.error('Failed to fetch products:', error);
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed to load');
+      setProducts(data);
+    } catch (err) {
+      console.error('❌ Product Fetch Error:', err.message);
+      Alert.alert(isEnglish ? 'Error' : 'பிழை', isEnglish ? 'Failed to fetch products' : 'தயாரிப்புகளை பெற முடியவில்லை');
     } finally {
       setLoading(false);
     }
-  };
+  }, [isEnglish, setProducts]);
 
-  const filteredProducts = products.filter((item) =>
-    (selectedFilter === 'All' || item.category === selectedFilter) &&
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const filteredProducts = products.filter(
+    (item) =>
+      (selectedFilter === 'All' || item.category === selectedFilter) &&
+      (item.itemName || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handlePriceUpdate = async () => {
     if (!selectedProduct) return;
     try {
       const token = await getToken();
-      const response = await fetch(`${baseUrl}/api/products/${selectedProduct.id}`, {
+      const res = await fetch(`${baseUrl}/api/products/${selectedProduct.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ ...selectedProduct, price: newPrice }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        const updatedList = products.map((p) => (p.id === selectedProduct.id ? data : p));
-        setProducts(updatedList);
-        Alert.alert(isEnglish ? 'Success' : 'வெற்றி', isEnglish ? 'Price updated' : 'விலை புதுப்பிக்கப்பட்டது');
-        setShowModal(false);
-      } else {
-        Alert.alert(isEnglish ? 'Error' : 'பிழை', data.message || (isEnglish ? 'Failed to update' : 'புதுப்பிக்க முடியவில்லை'));
-      }
-    } catch (error) {
-      console.error('Update failed:', error);
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Update failed');
+      setProducts(products.map((p) => (p.id === selectedProduct.id ? data : p)));
+
+      Alert.alert(isEnglish ? 'Success' : 'வெற்றி', isEnglish ? 'Price updated successfully' : 'விலை புதுப்பிக்கப்பட்டது');
+      setShowModal(false);
+    } catch (err) {
+      console.error('❌ Price update failed:', err.message);
+      Alert.alert(isEnglish ? 'Error' : 'பிழை', isEnglish ? 'Failed to update price' : 'விலை புதுப்பிக்க முடியவில்லை');
     }
   };
 
@@ -99,8 +101,8 @@ export const Orders = ({ navigation }) => {
         <Text style={styles.heartIcon}>💙</Text>
       </TouchableOpacity>
       <Text style={styles.category}>{item.category}</Text>
-      <Text style={styles.size}>{item.name} - {item.size}</Text>
-      <Text style={styles.price}>{item.price}</Text>
+      <Text style={styles.size}>{item.itemName}</Text>
+      <Text style={styles.price}>₹ {item.price}</Text>
     </TouchableOpacity>
   );
 
@@ -138,7 +140,7 @@ export const Orders = ({ navigation }) => {
 
       {/* Filters */}
       <View style={styles.filters}>
-        {filterCategories.map(category => {
+        {filterCategories.map((category) => {
           const isActive = selectedFilter === category;
           return (
             <TouchableOpacity
@@ -147,12 +149,11 @@ export const Orders = ({ navigation }) => {
               onPress={() => setSelectedFilter(category)}
             >
               <Text style={isActive ? styles.filterTextActive : styles.filterText}>
-                {isEnglish ? category : 
+                {isEnglish ? category :
                   category === 'All' ? 'அனைத்து' :
                   category === 'Cement' ? 'சிமெண்டு' :
                   category === 'Sand' ? 'மண்' :
-                  category === 'Bricks' ? 'கட்டுக்கள்' : category
-                }
+                  category === 'Bricks' ? 'கட்டுகள்' : category}
               </Text>
             </TouchableOpacity>
           );
@@ -169,7 +170,7 @@ export const Orders = ({ navigation }) => {
           data={filteredProducts}
           numColumns={2}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.productList}
           showsVerticalScrollIndicator={false}
@@ -193,7 +194,7 @@ export const Orders = ({ navigation }) => {
         </TouchableOpacity>
       )}
 
-      {/* Price Modal */}
+      {/* Price Update Modal */}
       {showModal && selectedProduct && (
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
@@ -206,11 +207,11 @@ export const Orders = ({ navigation }) => {
                 onValueChange={(itemValue) => {
                   const product = products.find((p) => p.id === itemValue);
                   setSelectedProduct(product);
-                  setNewPrice(product?.price || '');
+                  setNewPrice(product?.price?.toString() || '');
                 }}
               >
                 {products.map((product) => (
-                  <Picker.Item key={product.id} label={product.name} value={product.id} />
+                  <Picker.Item key={product.id} label={product.itemName} value={product.id} />
                 ))}
               </Picker>
             </View>
@@ -231,7 +232,7 @@ export const Orders = ({ navigation }) => {
                 style={[styles.modalButton, { backgroundColor: '#ccc' }]}
                 onPress={() => setShowModal(false)}
               >
-                <Text style={styles.modalButtonText}>{isEnglish ? 'Cancel' : 'ரத்து செய்யவும்'}</Text>
+                <Text style={styles.modalButtonText}>{isEnglish ? 'Cancel' : 'ரத்து'}</Text>
               </TouchableOpacity>
             </View>
           </View>

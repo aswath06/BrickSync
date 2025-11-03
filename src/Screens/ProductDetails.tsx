@@ -59,7 +59,14 @@ export const ProductDetails = ({ route, navigation }: any) => {
 
   const [quantity, setQuantity] = useState('');
   const description = product.description ?? (isEnglish ? 'No description available.' : 'விளக்கம் இல்லை.');
-  const unitPrice = parseInt(product.price?.replace(/[^\d]/g, '') || '0', 10);
+
+  // ✅ FIXED: safely parse price whether it's a number or string
+  const rawPrice = product.price ?? 0;
+  const priceNumber = typeof rawPrice === 'number'
+    ? rawPrice
+    : parseFloat(String(rawPrice).replace(/[^\d.]/g, '')) || 0;
+
+  const unitPrice = priceNumber;
 
   const handleAddToCart = () => {
     const qty = Number(quantity);
@@ -133,7 +140,10 @@ export const ProductDetails = ({ route, navigation }: any) => {
         <View style={styles.bottomSheet}>
           <View style={styles.dragHandle} />
           <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.price}>{product.price}</Text>
+
+          {/* ✅ Price display safe for both string/number */}
+          <Text style={styles.price}>₹ {unitPrice}</Text>
+
           <Text style={styles.descriptionLabel}>{isEnglish ? 'Description' : 'விளக்கம்'}</Text>
           <Text style={styles.details}>{description}</Text>
 
@@ -265,9 +275,9 @@ const styles = StyleSheet.create({
   },
   productName: { fontSize: moderateScale(20), fontWeight: '700', marginBottom: moderateScale(6), color: '#1E1E1E' },
   price: { fontSize: moderateScale(16), fontWeight: '600', color: '#1577EA', marginBottom: moderateScale(10) },
-  descriptionLabel: { fontWeight: '600', marginBottom: moderateScale(4), color:'black' },
+  descriptionLabel: { fontWeight: '600', marginBottom: moderateScale(4), color: 'black' },
   details: { fontSize: moderateScale(13), color: '#666', marginBottom: moderateScale(12) },
-  chooseSize: { fontWeight: '600', marginBottom: moderateScale(6), color:'black' },
+  chooseSize: { fontWeight: '600', marginBottom: moderateScale(6), color: 'black' },
   sizeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: moderateScale(10), marginBottom: moderateScale(16) },
   sizeButton: {
     borderWidth: 1,
@@ -280,7 +290,7 @@ const styles = StyleSheet.create({
   sizeButtonActive: { backgroundColor: '#1577EA', borderColor: '#1577EA' },
   sizeText: { fontSize: moderateScale(13), color: '#333' },
   sizeTextActive: { fontSize: moderateScale(13), color: '#fff' },
-  quantity: { fontWeight: '600', color:'black' },
+  quantity: { fontWeight: '600', color: 'black' },
   input: {
     backgroundColor: '#fff',
     borderRadius: moderateScale(14),

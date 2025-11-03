@@ -96,7 +96,7 @@ export const AddUserPage: React.FC<Props> = ({ navigation }) => {
         statements: [] as any[],
       };
 
-      const response = await fetch('https://bricksyncback.onrender.com/api/users', {
+      const response = await fetch('https://bricksyncbackend-lm1u.onrender.com/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -55,7 +55,7 @@ export const AddTruckScreen = () => {
     try {
       setLoading(true);
       await axios.post(
-        'https://bricksyncbackend-1.onrender.com/api/vehicles',
+        'https://bricksyncbackend-lm1u.onrender.com/api/vehicles',
         truckData,
         { headers: { 'Content-Type': 'application/json' } }
       );
