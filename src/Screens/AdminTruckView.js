@@ -14,11 +14,18 @@ import { useTruckStore } from '../stores/useTruckStore';
 import { moderateScale } from './utils/scalingUtils';
 import { useToggleStore } from '../stores/useToggleStore';
 
-const isValidDate = (date) => new Date(date) > new Date();
+// ✅ Validate only if date exists
+const isValidDate = (date) => {
+  if (!date) return true; // Missing -> treated as valid
+  const d = new Date(date);
+  return d instanceof Date && !isNaN(d) && d > new Date();
+};
 
+// ✅ Format date or return "-"
 const formatDate = (isoDate) => {
   if (!isoDate) return '-';
   const date = new Date(isoDate);
+  if (isNaN(date)) return '-';
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
@@ -26,66 +33,66 @@ const formatDate = (isoDate) => {
   });
 };
 
+// ✅ Get nearest upcoming expiry
 const getNearestDue = (details) => {
-  const { insurance, pollution } = details || {};
+  const { rcExpiry, insurance, pollution, fitness } = details || {};
   const dates = [
+    { label: 'RC', date: new Date(rcExpiry) },
     { label: 'Insurance', date: new Date(insurance) },
     { label: 'Pollution', date: new Date(pollution) },
+    { label: 'Fitness', date: new Date(fitness) },
   ];
+
   const sorted = dates
     .filter(({ date }) => date instanceof Date && !isNaN(date))
     .sort((a, b) => a.date - b.date);
+
   return sorted[0] || {};
 };
 
+// ✅ Truck Card Component
 const TruckCard = ({ truckNumber, due, details, isTruckActive, isEnglish }) => {
-  const statusColor = isTruckActive ? '#4caf50' : '#ff9800';
+  const statusColor = isTruckActive ? '#4caf50' : '#e53935';
+  const cardBackground = isTruckActive ? '#ffffff' : '#ffeaea';
+
   const statusText = isTruckActive
-    ? isEnglish ? 'Active' : 'செயலில்'
-    : isEnglish ? 'Inactive' : 'செயலில் இல்லை';
+    ? isEnglish
+      ? 'Active'
+      : 'செயலில்'
+    : isEnglish
+    ? 'Invalid'
+    : 'தவறானது';
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: cardBackground }]}>
       <View style={styles.row}>
-        <FrontTruck width={24} height={24}  color='#1577EA'/>
+        <FrontTruck width={24} height={24} color="#1577EA" />
         <Text style={styles.truckNumber}>{truckNumber}</Text>
         <View style={[styles.statusChip, { backgroundColor: statusColor }]}>
           <Text style={styles.statusText}>{statusText}</Text>
         </View>
       </View>
 
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>{isEnglish ? 'RC Expiry:' : 'RC காலாவதி:'}</Text>
-        <Text style={styles.valueText}>{formatDate(details.rcExpiry)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>{isEnglish ? 'Insurance:' : 'விமா:'}</Text>
-        <Text style={styles.valueText}>{formatDate(details.insurance)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>{isEnglish ? 'Pollution:' : 'மாசுபாடு:'}</Text>
-        <Text style={styles.valueText}>{formatDate(details.pollution)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>{isEnglish ? 'Permit:' : 'அனுமதி:'}</Text>
-        <Text style={styles.valueText}>{details.permit || '-'}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>{isEnglish ? 'Fitness:' : 'உடம்படுதல்:'}</Text>
-        <Text style={styles.valueText}>{formatDate(details.fitness)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>{isEnglish ? 'Tyre Changed:' : 'டைர் மாற்றப்பட்டது:'}</Text>
-        <Text style={styles.valueText}>{formatDate(details.tyreChangedDate)}</Text>
-      </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.label}>{isEnglish ? 'Total KM:' : 'மொத்த கிமீ:'}</Text>
-        <Text style={styles.valueText}>{details.TotalKm || '-'}</Text>
-      </View>
+      {/* Truck details */}
+      {[
+        { label: isEnglish ? 'RC Expiry:' : 'RC காலாவதி:', value: formatDate(details.rcExpiry) },
+        { label: isEnglish ? 'Insurance:' : 'விமா:', value: formatDate(details.insurance) },
+        { label: isEnglish ? 'Pollution:' : 'மாசுபாடு:', value: formatDate(details.pollution) },
+        { label: isEnglish ? 'Permit:' : 'அனுமதி:', value: details.permit || '-' },
+        { label: isEnglish ? 'Fitness:' : 'உடம்படுதல்:', value: formatDate(details.fitness) },
+        { label: isEnglish ? 'Tyre Changed:' : 'டைர் மாற்றப்பட்டது:', value: formatDate(details.tyreChangedDate) },
+        { label: isEnglish ? 'Total KM:' : 'மொத்த கிமீ:', value: details.totalKm || '-' },
+      ].map((item, index) => (
+        <View style={styles.detailRow} key={index}>
+          <Text style={styles.label}>{item.label}</Text>
+          <Text style={styles.valueText}>{item.value}</Text>
+        </View>
+      ))}
     </View>
   );
 };
 
+// ✅ Main Component
 export const AdminTruckView = ({ overrideTrucks }) => {
   const { trucks, fetchAllTrucks } = useTruckStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -103,27 +110,48 @@ export const AdminTruckView = ({ overrideTrucks }) => {
 
   const allTrucks = overrideTrucks || trucks;
 
+  // ✅ Filter and log expired trucks
   const sortedTrucks = allTrucks
     .map((truck) => {
-      const { insurance, permit, pollution } = truck.details;
+      const { rcExpiry, insurance, pollution, fitness } = truck.details || {};
+
+      const isRCValid = isValidDate(rcExpiry);
       const isInsuranceValid = isValidDate(insurance);
       const isPollutionValid = isValidDate(pollution);
-      const isPermitValid = permit?.toLowerCase?.() === 'yes';
-      const isTruckActive = isInsuranceValid && isPollutionValid && isPermitValid;
+      const isFitnessValid = isValidDate(fitness);
+
+      const invalidReasons = [];
+      if (!isRCValid && rcExpiry) invalidReasons.push('RC Expired');
+      if (!isInsuranceValid && insurance) invalidReasons.push('Insurance Expired');
+      if (!isPollutionValid && pollution) invalidReasons.push('Pollution Expired');
+      if (!isFitnessValid && fitness) invalidReasons.push('Fitness Expired');
+
+      const isTruckActive =
+        isRCValid && isInsuranceValid && isPollutionValid && isFitnessValid;
+
+      if (!isTruckActive && invalidReasons.length > 0) {
+        console.warn(
+          `🚨 Truck ${truck.number} marked Invalid due to: ${invalidReasons.join(', ')}`
+        );
+      }
+
       return { ...truck, isTruckActive };
     })
     .sort((a, b) => {
-      const getNextExpiry = (d) =>
-        Math.min(
-          new Date(d.insurance).getTime(),
-          new Date(d.pollution).getTime()
-        );
+      const getNextExpiry = (d) => {
+        const dates = [d.rcExpiry, d.insurance, d.pollution, d.fitness]
+          .map((x) => new Date(x))
+          .filter((x) => x instanceof Date && !isNaN(x))
+          .sort((x, y) => x - y);
+        return dates[0] ? dates[0].getTime() : Infinity;
+      };
       return getNextExpiry(a.details) - getNextExpiry(b.details);
     });
 
   const activeTrucks = sortedTrucks.filter((t) => t.isTruckActive);
   const inactiveTrucks = sortedTrucks.filter((t) => !t.isTruckActive);
 
+  // ✅ Loading animation
   if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
@@ -142,7 +170,11 @@ export const AdminTruckView = ({ overrideTrucks }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} style={styles.container}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        style={styles.container}
+      >
+        {/* Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowBack color="black" />
@@ -153,6 +185,7 @@ export const AdminTruckView = ({ overrideTrucks }) => {
           <View style={{ width: 24 }} />
         </View>
 
+        {/* Status Summary */}
         <View style={styles.statusContainer}>
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
@@ -163,57 +196,95 @@ export const AdminTruckView = ({ overrideTrucks }) => {
             </View>
             <Text style={styles.statusCount}>{activeTrucks.length}</Text>
           </View>
+
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
-              <TwoPersonIcon width={24} height={24} color="orange" />
+              <TwoPersonIcon width={24} height={24} color="red" />
               <Text style={styles.statusTitle}>
-                {isEnglish ? 'Inactive' : 'செயலில் இல்லை'}
+                {isEnglish ? 'Invalid Trucks' : 'தவறான லாரிகள்'}
               </Text>
             </View>
-            <Text style={styles.statusCount}>{inactiveTrucks.length}</Text>
+            <Text style={[styles.statusCount, { color: 'red' }]}>
+              {inactiveTrucks.length}
+            </Text>
           </View>
         </View>
 
-        {[...activeTrucks, ...inactiveTrucks].map((truck, index) => {
-          const dueInfo = getNearestDue(truck.details);
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => navigation.navigate('TruckDetails', { truck })}
-            >
-              <TruckCard
-                truckNumber={truck.number}
-                due={dueInfo}
-                details={truck.details}
-                isTruckActive={truck.isTruckActive}
-                isEnglish={isEnglish}
-              />
-            </TouchableOpacity>
-          );
-        })}
+        {/* Active Trucks */}
+        {activeTrucks.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>
+              {isEnglish ? '✅ Active Trucks' : '✅ செயலில் உள்ள லாரிகள்'}
+            </Text>
+            {activeTrucks.map((truck, index) => (
+              <TouchableOpacity
+                key={`active-${index}`}
+                onPress={() => navigation.navigate('TruckDetails', { truck })}
+              >
+                <TruckCard
+                  truckNumber={truck.number}
+                  due={getNearestDue(truck.details)}
+                  details={truck.details}
+                  isTruckActive={true}
+                  isEnglish={isEnglish}
+                />
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
+        {/* Invalid Trucks */}
+        {inactiveTrucks.length > 0 && (
+          <>
+            <Text style={[styles.sectionHeader, { color: 'red' }]}>
+              {isEnglish
+                ? '❌ Invalid / Expired Trucks'
+                : '❌ தவறான / காலாவதியான லாரிகள்'}
+            </Text>
+            {inactiveTrucks.map((truck, index) => (
+              <TouchableOpacity
+                key={`inactive-${index}`}
+                onPress={() => navigation.navigate('TruckDetails', { truck })}
+              >
+                <TruckCard
+                  truckNumber={truck.number}
+                  due={getNearestDue(truck.details)}
+                  details={truck.details}
+                  isTruckActive={false}
+                  isEnglish={isEnglish}
+                />
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
       </ScrollView>
 
-      {/* Floating Plus Button */}
+      {/* Floating Add Button */}
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={() => navigation.navigate('AddTruckScreen')}
       >
-        <Text style={{ color: 'white', fontSize: moderateScale(28), fontWeight: 'bold' }}>
-          +
-        </Text>
+        <Text style={styles.addText}>+</Text>
       </TouchableOpacity>
     </View>
   );
 };
+
+// ✅ Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: moderateScale(24),
     backgroundColor: '#f9f9f9',
   },
-  valueText: {
+  sectionHeader: {
+    fontSize: moderateScale(16),
+    fontWeight: 'bold',
+    marginBottom: moderateScale(8),
+    marginTop: moderateScale(10),
     color: 'black',
   },
+  valueText: { color: 'black' },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -226,12 +297,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    color: '#000',
   },
   headerText: {
     fontSize: moderateScale(20),
     fontWeight: 'bold',
-    color:'black'
+    color: 'black',
   },
   statusContainer: {
     flexDirection: 'row',
@@ -244,10 +314,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: moderateScale(12),
     padding: moderateScale(12),
-    marginHorizontal: moderateScale(4),
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: moderateScale(1), height: moderateScale(2) },
+    shadowOffset: { width: 1, height: 2 },
     elevation: moderateScale(2),
     height: moderateScale(100),
   },
@@ -268,7 +337,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: moderateScale(12),
     padding: moderateScale(14),
     marginBottom: moderateScale(12),
@@ -323,5 +391,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
+  },
+  addText: {
+    color: 'white',
+    fontSize: moderateScale(28),
+    fontWeight: 'bold',
   },
 });

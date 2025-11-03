@@ -20,6 +20,7 @@ import { getToken } from '../services/authStorage';
 import { baseUrl } from '../../config';
 import { moderateScale } from './utils/scalingUtils';
 import { useToggleStore } from '../stores/useToggleStore';
+import LottieView from 'lottie-react-native';
 
 export const DashboardScreen = ({ navigation }) => {
   const user = useUserStore((state) => state.user);
@@ -33,10 +34,13 @@ export const DashboardScreen = ({ navigation }) => {
   const [allDriversCount, setAllDriversCount] = useState<number | null>(null);
 
   const trucks = useTruckStore((state) => state.trucks);
-  const fetchTrucksByDriverId = useTruckStore((state) => state.fetchTrucksByDriverId);
+  const fetchTrucksByDriverId = useTruckStore(
+    (state) => state.fetchTrucksByDriverId
+  );
 
   const unassignedJobsCount = useMemo(
-    () => jobData.filter(job => job.status.toLowerCase() === 'assign').length,
+    () =>
+      jobData.filter((job) => job.status.toLowerCase() === 'assign').length,
     [jobData]
   );
 
@@ -78,27 +82,30 @@ export const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const transformJobData = (data) => data
-  .filter(item => item.status.toLowerCase() !== 'delivered')
-  .map((item, index) => ({
-    id: item.id.toString(),
-    orderId: item.orderId,
-    slNo: (index + 1).toString(),
-    customer: item.User?.name || (isEnglish ? 'Unknown' : 'காணப்படவில்லை'),
-    customerPhone: item.User?.phone || (isEnglish ? 'N/A' : 'கிடைக்கவில்லை'),
-    ord: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
-    vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
-    materials: Array.isArray(item.products)
-      ? item.products.map(p => ({
-          name: p.name,
-          quantity: p.quantity,
-          price: p.price,
-          size: p.size, // ← add this
-        }))
-      : [],
-  }));
-
+  const transformJobData = (data) =>
+    data
+      .filter((item) => item.status.toLowerCase() !== 'delivered')
+      .map((item, index) => ({
+        id: item.id.toString(),
+        orderId: item.orderId,
+        slNo: (index + 1).toString(),
+        customer: item.User?.name || (isEnglish ? 'Unknown' : 'காணப்படவில்லை'),
+        customerPhone: item.User?.phone || (isEnglish ? 'N/A' : 'கிடைக்கவில்லை'),
+        ord: new Date(item.createdAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+        vehicleNumber: item.vehicleNumber || item.Vehicle?.vehicleNumber || 'N/A',
+        materials: Array.isArray(item.products)
+          ? item.products.map((p) => ({
+              name: p.name,
+              quantity: p.quantity,
+              price: p.price,
+              size: p.size,
+            }))
+          : [],
+      }));
 
   const fetchAllUsersAndDriversCount = async () => {
     try {
@@ -190,13 +197,57 @@ export const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    const refreshAction = userRole === 2 && trucks.length > 0
-      ? fetchJobsByVehicle(trucks[0]?.number)
-      : fetchJobs();
-    Promise.resolve(refreshAction).finally(() => setRefreshing(false));
-  }, [trucks]);
+  // ✅ FIXED REFRESH FUNCTION
+const onRefresh = useCallback(async () => {
+  setRefreshing(true);
+  try {
+    console.log('🔄 Refresh started...');
+    const token = await getToken();
+    console.log('🪪 Token:', token ? '✅ Found token' : '❌ No token');
+
+    // Fetch updated user info (balance, advance)
+    if (user?.userid && token) {
+      console.log('📦 Fetching updated user info for userId:', user.userid);
+      const res = await fetch(`${baseUrl}/api/users/${user.userid}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const updatedUser = await res.json();
+        console.log('👤 Updated user data:', updatedUser);
+        useUserStore.setState({ user: updatedUser });
+      } else {
+        console.error('❌ Failed to fetch user info:', res.status);
+      }
+    }
+
+    if (userRole === 2 && user?.userid) {
+      console.log('🚚 Driver role detected. Fetching trucks for user...');
+      await fetchTrucksByDriverId(user.userid);
+
+      const updatedTrucks = useTruckStore.getState().trucks;
+      console.log('🧾 Updated trucks:', updatedTrucks);
+
+      if (updatedTrucks.length > 0) {
+        console.log('🚛 Fetching jobs for vehicle:', updatedTrucks[0].number);
+        await fetchJobsByVehicle(updatedTrucks[0].number);
+      } else {
+        console.warn('⚠️ No trucks found for this driver.');
+        setJobData([]);
+      }
+    } else {
+      console.log('👨‍💼 Admin/Customer role detected. Fetching all jobs and counts...');
+      await fetchJobs();
+      await fetchAllUsersAndDriversCount();
+    }
+
+    console.log('✅ Refresh completed successfully.');
+  } catch (error) {
+    console.error('❌ Error during refresh:', error);
+  } finally {
+    setRefreshing(false);
+  }
+}, [userRole, user?.userid, fetchTrucksByDriverId]);
+
 
   return (
     <ScrollView
@@ -214,14 +265,20 @@ export const DashboardScreen = ({ navigation }) => {
         <>
           {trucks.length === 0 ? (
             <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>{isEnglish ? 'No vehicle assigned' : 'இயந்திரம் இல்லை'}</Text>
+              <Text style={styles.noDataText}>
+                {isEnglish ? 'No vehicle assigned' : 'இயந்திரம் இல்லை'}
+              </Text>
             </View>
           ) : (
             <>
               <View style={styles.section}>
                 <MainCard
                   name={user?.name || (isEnglish ? 'Guest' : 'விருந்தினர்')}
-                  company={isEnglish ? 'Aswath Hollow Bricks and Lorry Services' : 'அஸ்வத் ஹாலோ பிரிக்ஸ் மற்றும் லாரி சேவைகள்'}
+                  company={
+                    isEnglish
+                      ? 'Aswath Hollow Bricks and Lorry Services'
+                      : 'அஸ்வத் ஹாலோ பிரிக்ஸ் மற்றும் லாரி சேவைகள்'
+                  }
                   balance={user?.balance}
                   advance={user?.advance}
                   driverId={user?.userid || 'null'}
@@ -232,37 +289,54 @@ export const DashboardScreen = ({ navigation }) => {
 
               <View style={styles.section}>
                 {jobData.length === 0 ? (
-                  <View style={styles.noDataContainer}>
-                    <Text style={styles.noDataText}>{isEnglish ? 'No data found' : 'தகவல் இல்லை'}</Text>
-                  </View>
-                ) : (
-                  jobData.map((job, index) => (
-                    <View key={job.id} style={styles.section}>
-                      <JobCard
-                        slNo={(index + 1).toString().padStart(2, '0')}
-                        customerName={job.customer}
-                        customerPhone={job.customerPhone}
-                        loadDetails={job.materials.map(mat => `${mat.name} (${mat.size || 'N/A'}) * ${mat.quantity}`)}
-                        buttonLabel={
-                          job.status === 'Delivered'
-                            ? isEnglish ? 'Delivered' : 'முற்றியனது'
-                            : job.status === 'Noted'
-                            ? isEnglish ? 'Mark as Delivered' : 'முற்றியனாக குறிக்கவும்'
-                            : isEnglish ? 'Mark as Noted' : 'குறிக்கவும்'
-                        }
-                        width={370}
-                        disabled={loadingOrderId === job.orderId}
-                        onPress={() => {
-                          if (job.status === 'Noted') {
-                            uploadDeliveryFile(job.orderId);
-                          } else if (job.status !== 'Delivered') {
-                            updateOrderStatus(job.orderId, 'noted');
-                          }
-                        }}
-                      />
-                    </View>
-                  ))
-                )}
+  <View style={styles.noDataContainer}>
+    <LottieView
+      source={require('../assets/lottie/Car_loading.json')}
+      autoPlay
+      loop
+      style={{ width: 200, height: 200 }}
+    />
+    <Text style={styles.noDataText}>
+      {isEnglish ? 'No jobs available' : 'வேலைகள் இல்லை'}
+    </Text>
+  </View>
+) : (
+  jobData.map((job, index) => (
+    <View key={job.id} style={styles.section}>
+      <JobCard
+        slNo={(index + 1).toString().padStart(2, '0')}
+        customerName={job.customer}
+        customerPhone={job.customerPhone}
+        loadDetails={job.materials.map(
+          (mat) => `${mat.name} (${mat.size || 'N/A'}) * ${mat.quantity}`
+        )}
+        buttonLabel={
+          job.status === 'Delivered'
+            ? isEnglish
+              ? 'Delivered'
+              : 'முற்றியனது'
+            : job.status === 'Noted'
+            ? isEnglish
+              ? 'Mark as Delivered'
+              : 'முற்றியனாக குறிக்கவும்'
+            : isEnglish
+              ? 'Mark as Noted'
+              : 'குறிக்கவும்'
+        }
+        width={370}
+        disabled={loadingOrderId === job.orderId}
+        onPress={() => {
+          if (job.status === 'Noted') {
+            uploadDeliveryFile(job.orderId);
+          } else if (job.status !== 'Delivered') {
+            updateOrderStatus(job.orderId, 'noted');
+          }
+        }}
+      />
+    </View>
+  ))
+)}
+
               </View>
             </>
           )}
@@ -272,7 +346,11 @@ export const DashboardScreen = ({ navigation }) => {
           <View style={styles.section}>
             <MainCard
               name={user?.name || (isEnglish ? 'Guest' : 'விருந்தினர்')}
-              company={isEnglish ? 'Aswath Hollow Bricks and Lorry Services' : 'அஸ்வத் ஹாலோ பிரிக்ஸ் மற்றும் லாரி சேவைகள்'}
+              company={
+                isEnglish
+                  ? 'Aswath Hollow Bricks and Lorry Services'
+                  : 'அஸ்வத் ஹாலோ பிரிக்ஸ் மற்றும் லாரி சேவைகள்'
+              }
               balance={user?.balance}
               advance={user?.advance}
               driverId={user?.userid || 'null'}
@@ -281,7 +359,9 @@ export const DashboardScreen = ({ navigation }) => {
             />
           </View>
           <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>{isEnglish ? 'No Pending Orders' : 'மீதமுள்ள ஆர்டர்கள் இல்லை'}</Text>
+            <Text style={styles.noDataText}>
+              {isEnglish ? 'No Pending Orders' : 'மீதமுள்ள ஆர்டர்கள் இல்லை'}
+            </Text>
           </View>
         </View>
       ) : (
@@ -289,13 +369,17 @@ export const DashboardScreen = ({ navigation }) => {
           <View style={styles.cardRow}>
             <DashboardInfoCard
               height={120}
-              icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/2965/2965567.png' }}
+              icon={{
+                uri: 'https://cdn-icons-png.flaticon.com/512/2965/2965567.png',
+              }}
               title={isEnglish ? 'All Jobs' : 'அனைத்து வேலைகள்'}
               value={jobData.length}
             />
             <DashboardInfoCard
               height={120}
-              icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' }}
+              icon={{
+                uri: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+              }}
               title={isEnglish ? 'Unassigned Jobs' : 'ஒதுக்கப்படாத வேலைகள்'}
               value={unassignedJobsCount}
             />
@@ -304,13 +388,17 @@ export const DashboardScreen = ({ navigation }) => {
           <View style={styles.cardRow1}>
             <DashboardInfoCard
               height={120}
-              icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/847/847969.png' }}
+              icon={{
+                uri: 'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+              }}
               title={isEnglish ? 'Customers' : 'வாடிக்கையாளர்கள்'}
               value={allUsersCount ?? '...'}
             />
             <DashboardInfoCard
               height={120}
-              icon={{ uri: 'https://cdn-icons-png.flaticon.com/512/743/743007.png' }}
+              icon={{
+                uri: 'https://cdn-icons-png.flaticon.com/512/743/743007.png',
+              }}
               title={isEnglish ? 'Drivers' : 'டிரைவர்கள்'}
               value={allDriversCount ?? '...'}
             />
@@ -336,6 +424,7 @@ const styles = StyleSheet.create({
     paddingTop: moderateScale(42),
     paddingBottom: moderateScale(32),
     alignItems: 'center',
+    paddingHorizontal: moderateScale(22),
   },
   section: {
     marginTop: moderateScale(32),
@@ -357,7 +446,7 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     width: moderateScale(450),
-    paddingHorizontal: moderateScale(16),
+    paddingHorizontal: moderateScale(26),
   },
   noDataContainer: {
     marginTop: moderateScale(32),
